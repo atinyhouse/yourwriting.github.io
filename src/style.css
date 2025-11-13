@@ -1,0 +1,196 @@
+@import "tailwindcss";
+
+/* Bauhaus Design System - 包豪斯风格设计系统 */
+
+:root {
+  /* Colors - 色彩系统 */
+  --color-black: #000000;
+  --color-white: #FFFFFF;
+  --color-gray-light: #F5F5F5;
+  --color-gray: #CCCCCC;
+  --color-gray-dark: #333333;
+
+  /* Primary Colors - 强调色 */
+  --color-red: #E32D22;
+  --color-yellow: #FFD700;
+  --color-blue: #0051BA;
+
+  /* Typography */
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+  font-weight: 400;
+
+  /* Spacing - 8px 栅格系统 */
+  --spacing-xs: 8px;
+  --spacing-sm: 16px;
+  --spacing-md: 24px;
+  --spacing-lg: 32px;
+  --spacing-xl: 48px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-white);
+  color: var(--color-black);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography - 排版 */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: var(--spacing-sm);
+}
+
+h1 { font-size: 32px; }
+h2 { font-size: 24px; }
+h3 { font-size: 20px; }
+h4 { font-size: 18px; }
+
+p {
+  margin-bottom: var(--spacing-sm);
+  line-height: 1.6;
+}
+
+/* Links */
+a {
+  color: var(--color-black);
+  text-decoration: none;
+  border-bottom: 2px solid var(--color-black);
+  transition: border-color var(--transition-fast);
+}
+
+a:hover {
+  border-bottom-color: var(--color-red);
+}
+
+/* Buttons - 按钮 */
+button, .btn {
+  display: inline-block;
+  padding: 12px 24px;
+  background-color: var(--color-black);
+  color: var(--color-white);
+  border: 2px solid var(--color-black);
+  font-size: 16px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+button:hover, .btn:hover {
+  background-color: var(--color-white);
+  color: var(--color-black);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background-color: var(--color-white);
+  color: var(--color-black);
+}
+
+button.secondary:hover {
+  background-color: var(--color-black);
+  color: var(--color-white);
+}
+
+/* Input - 输入框 */
+input, textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--color-gray);
+  font-family: inherit;
+  font-size: 16px;
+  transition: border-color var(--transition-fast);
+  border-radius: 0;
+  background-color: var(--color-white);
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--color-black);
+  border-width: 2px;
+  padding: 11px; /* 补偿边框加粗 */
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Card - 卡片 */
+.card {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-gray);
+  padding: var(--spacing-md);
+  transition: border-color var(--transition-fast);
+}
+
+.card:hover {
+  border-color: var(--color-black);
+}
+
+/* Container - 容器 */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+}
+
+/* Grid - 网格布局 */
+.grid {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .grid-2, .grid-3, .grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  h1 { font-size: 28px; }
+  h2 { font-size: 22px; }
+
+  .container {
+    padding: 0 var(--spacing-sm);
+  }
+}
+
+/* Utility Classes */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.mt-sm { margin-top: var(--spacing-sm); }
+.mt-md { margin-top: var(--spacing-md); }
+.mt-lg { margin-top: var(--spacing-lg); }
+.mb-sm { margin-bottom: var(--spacing-sm); }
+.mb-md { margin-bottom: var(--spacing-md); }
+.mb-lg { margin-bottom: var(--spacing-lg); }
+
+/* Accent Colors */
+.accent-red { border-left: 4px solid var(--color-red); }
+.accent-yellow { border-left: 4px solid var(--color-yellow); }
+.accent-blue { border-left: 4px solid var(--color-blue); }
