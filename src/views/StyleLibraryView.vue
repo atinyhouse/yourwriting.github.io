@@ -44,12 +44,17 @@
 
           <!-- 微信公众号提示 -->
           <div v-if="urlInput.includes('mp.weixin.qq.com')" class="wechat-tip mt-sm">
-            <p><strong>💡 微信公众号批量导入提示：</strong></p>
-            <p>由于微信限制，暂不支持一键爬取整个公众号。建议：</p>
-            <ol>
-              <li>手动复制多个文章链接，创建HTML页面后使用"批量爬取网站"</li>
-              <li>或使用"直接粘贴内容"功能逐篇导入</li>
-            </ol>
+            <p><strong>💡 微信公众号批量导入指南：</strong></p>
+            <div class="tip-content">
+              <p><strong>✅ 推荐方法：</strong>使用"批量爬取网站"</p>
+              <ol>
+                <li>在微信中打开公众号主页</li>
+                <li>点击右上角"..."，选择"复制链接"</li>
+                <li>将链接粘贴到上方输入框</li>
+                <li>点击"批量爬取网站"按钮</li>
+              </ol>
+              <p class="note">⚠️ 批量提取可能需要较长时间，请耐心等待</p>
+            </div>
           </div>
 
           <!-- 批量导入进度 -->

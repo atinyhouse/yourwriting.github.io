@@ -258,10 +258,49 @@ export const detectUrlType = (url) => {
   }
 }
 
-// 从公众号文章链接中提取 biz 参数（用于批量获取）
+// 从公众号文章链接中提取 biz 参数
 export const extractBizFromUrl = (url) => {
   const match = url.match(/[?&]__biz=([^&]+)/)
-  return match ? match[1] : null
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+// 从HTML源代码中提取 biz 参数
+export const extractBizFromHTML = async (url) => {
+  try {
+    console.log('正在从HTML源代码中提取 biz 参数...')
+
+    const html = await fetchWithCORS(url)
+
+    // 方法1: 从 URL 参数中提取
+    const bizMatch1 = html.match(/__biz=([^&"'\s]+)/i)
+    if (bizMatch1) {
+      const biz = decodeURIComponent(bizMatch1[1])
+      console.log('✅ 从__biz参数提取成功:', biz)
+      return biz
+    }
+
+    // 方法2: 从 var biz = 变量中提取
+    const bizMatch2 = html.match(/var\s+biz\s*=\s*["']([^"']+)["']/i)
+    if (bizMatch2) {
+      const biz = bizMatch2[1]
+      console.log('✅ 从var biz变量提取成功:', biz)
+      return biz
+    }
+
+    // 方法3: 从 window.biz 中提取
+    const bizMatch3 = html.match(/window\.biz\s*=\s*["']([^"']+)["']/i)
+    if (bizMatch3) {
+      const biz = bizMatch3[1]
+      console.log('✅ 从window.biz提取成功:', biz)
+      return biz
+    }
+
+    console.error('❌ 无法从HTML中找到biz参数')
+    throw new Error('无法从HTML源代码中提取 biz 参数')
+  } catch (error) {
+    console.error('提取 biz 失败:', error)
+    throw error
+  }
 }
 
 // 获取微信文章的完整URL（处理短链接重定向）
@@ -335,7 +374,7 @@ export const fetchWechatAccountArticles = async (articleUrl) => {
   }
 }
 
-// 从页面中提取所有文章链接
+// 从页面中提取所有文章链接（支持微信公众号历史消息页面）
 export const extractArticleLinks = async (url) => {
   try {
     console.log('开始提取页面中的所有文章链接:', url)
@@ -343,60 +382,137 @@ export const extractArticleLinks = async (url) => {
     const html = await fetchWithCORS(url)
     const doc = new DOMParser().parseFromString(html, 'text/html')
 
+    // 检测是否是微信公众号页面
+    const isWechatPage = url.includes('mp.weixin.qq.com')
+
     // 查找所有链接
     const allLinks = doc.querySelectorAll('a[href]')
     const articleLinks = new Set()
 
     console.log('总共找到链接数:', allLinks.length)
 
-    allLinks.forEach(link => {
-      let href = link.getAttribute('href')
-      if (!href) return
+    // 如果是微信公众号页面，特殊处理
+    if (isWechatPage) {
+      console.log('检测到微信公众号页面，使用特殊提取逻辑')
 
-      const originalHref = href
+      // 从 HTML 中提取文章链接（微信公众号特有的格式）
+      // 方法1: 从 msgList 数据中提取
+      const msgListMatch = html.match(/var\s+msgList\s*=\s*'([^']+)'/i) ||
+                          html.match(/var\s+msgList\s*=\s*"([^"]+)"/i)
 
-      // 处理相对路径
-      if (href.startsWith('/')) {
-        const baseUrl = new URL(url)
-        href = baseUrl.origin + href
-      } else if (!href.startsWith('http')) {
-        return // 跳过非http链接
-      }
+      if (msgListMatch) {
+        try {
+          const msgListStr = msgListMatch[1]
+            .replace(/&#39;/g, "'")
+            .replace(/&quot;/g, '"')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
 
-      // 检查是否符合日期格式
-      const hasDatePattern = href.match(/\/\d{4}-\d{2}-\d{2}\//)
+          const msgList = JSON.parse(msgListStr)
 
-      // 过滤掉非文章链接
-      if (
-        href.includes('/posts/') ||
-        href.includes('/post/') ||
-        href.includes('/article/') ||
-        href.includes('/blog/') ||
-        href.includes('/p/') ||
-        href.match(/\/\d{4}\//) || // 包含年份的路径 (如 /2022/article)
-        hasDatePattern || // 包含完整日期的路径 (如 /2025-07-01/article)
-        href.match(/\.html?$/) // HTML文件
-      ) {
-        // 排除标签、分类、归档、thoughts等页面
-        const isExcluded =
-          href.includes('/tags/') ||
-          href.includes('/categories/') ||
-          href.includes('/archive') ||
-          href.includes('/page/') ||
-          href.includes('/thoughts') ||
-          href.includes('/about')
+          if (msgList && msgList.list) {
+            msgList.list.forEach(item => {
+              if (item.app_msg_ext_info && item.app_msg_ext_info.content_url) {
+                const link = 'https://mp.weixin.qq.com' + item.app_msg_ext_info.content_url.replace(/&amp;/g, '&')
+                articleLinks.add(link)
+                console.log('✅ 从msgList提取到文章链接:', link)
+              }
 
-        if (!isExcluded) {
-          console.log('✅ 找到文章链接:', originalHref, '→', href)
-          articleLinks.add(href)
-        } else {
-          console.log('⏭️  排除链接:', originalHref, '(excluded)')
+              // 多图文消息
+              if (item.app_msg_ext_info && item.app_msg_ext_info.multi_app_msg_item_list) {
+                item.app_msg_ext_info.multi_app_msg_item_list.forEach(subItem => {
+                  if (subItem.content_url) {
+                    const link = 'https://mp.weixin.qq.com' + subItem.content_url.replace(/&amp;/g, '&')
+                    articleLinks.add(link)
+                    console.log('✅ 从msgList多图文提取到文章链接:', link)
+                  }
+                })
+              }
+            })
+          }
+        } catch (e) {
+          console.error('解析 msgList 失败:', e)
         }
       }
-    })
+
+      // 方法2: 从 <a> 标签中提取
+      allLinks.forEach(link => {
+        let href = link.getAttribute('href')
+        if (!href) return
+
+        // 微信文章链接特征
+        if (href.includes('/s?__biz=') || href.includes('/s/')) {
+          // 处理相对路径
+          if (href.startsWith('/')) {
+            href = 'https://mp.weixin.qq.com' + href
+          }
+
+          // 确保是完整URL
+          if (href.startsWith('http')) {
+            articleLinks.add(href.replace(/&amp;/g, '&'))
+            console.log('✅ 从<a>标签提取到文章链接:', href)
+          }
+        }
+      })
+    } else {
+      // 普通网页的提取逻辑（保持原有逻辑）
+      allLinks.forEach(link => {
+        let href = link.getAttribute('href')
+        if (!href) return
+
+        const originalHref = href
+
+        // 处理相对路径
+        if (href.startsWith('/')) {
+          const baseUrl = new URL(url)
+          href = baseUrl.origin + href
+        } else if (!href.startsWith('http')) {
+          return // 跳过非http链接
+        }
+
+        // 检查是否符合日期格式
+        const hasDatePattern = href.match(/\/\d{4}-\d{2}-\d{2}\//)
+
+        // 过滤掉非文章链接
+        if (
+          href.includes('/posts/') ||
+          href.includes('/post/') ||
+          href.includes('/article/') ||
+          href.includes('/blog/') ||
+          href.includes('/p/') ||
+          href.match(/\/\d{4}\//) || // 包含年份的路径
+          hasDatePattern || // 包含完整日期的路径
+          href.match(/\.html?$/) // HTML文件
+        ) {
+          // 排除标签、分类、归档、thoughts等页面
+          const isExcluded =
+            href.includes('/tags/') ||
+            href.includes('/categories/') ||
+            href.includes('/archive') ||
+            href.includes('/page/') ||
+            href.includes('/thoughts') ||
+            href.includes('/about')
+
+          if (!isExcluded) {
+            console.log('✅ 找到文章链接:', originalHref, '→', href)
+            articleLinks.add(href)
+          } else {
+            console.log('⏭️  排除链接:', originalHref, '(excluded)')
+          }
+        }
+      })
+    }
 
     const links = Array.from(articleLinks)
-    console.log(`找到 ${links.length} 个可能的文章链接`)
+    console.log(`找到 ${links.length} 个文章链接`)
+
+    if (links.length === 0 && isWechatPage) {
+      console.warn('提示：如果是微信公众号，请确保：')
+      console.warn('1. 使用公众号的"全部消息"页面链接')
+      console.warn('2. 或者复制文章列表页面的完整HTML')
+    }
+
     return links
   } catch (error) {
     console.error('提取文章链接失败:', error)
