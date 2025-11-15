@@ -288,9 +288,13 @@ export const extractArticleLinks = async (url) => {
     const allLinks = doc.querySelectorAll('a[href]')
     const articleLinks = new Set()
 
+    console.log('总共找到链接数:', allLinks.length)
+
     allLinks.forEach(link => {
       let href = link.getAttribute('href')
       if (!href) return
+
+      const originalHref = href
 
       // 处理相对路径
       if (href.startsWith('/')) {
@@ -300,6 +304,9 @@ export const extractArticleLinks = async (url) => {
         return // 跳过非http链接
       }
 
+      // 检查是否符合日期格式
+      const hasDatePattern = href.match(/\/\d{4}-\d{2}-\d{2}\//)
+
       // 过滤掉非文章链接
       if (
         href.includes('/posts/') ||
@@ -308,19 +315,23 @@ export const extractArticleLinks = async (url) => {
         href.includes('/blog/') ||
         href.includes('/p/') ||
         href.match(/\/\d{4}\//) || // 包含年份的路径 (如 /2022/article)
-        href.match(/\/\d{4}-\d{2}-\d{2}\//) || // 包含完整日期的路径 (如 /2025-07-01/article)
+        hasDatePattern || // 包含完整日期的路径 (如 /2025-07-01/article)
         href.match(/\.html?$/) // HTML文件
       ) {
         // 排除标签、分类、归档、thoughts等页面
-        if (
-          !href.includes('/tags/') &&
-          !href.includes('/categories/') &&
-          !href.includes('/archive') &&
-          !href.includes('/page/') &&
-          !href.includes('/thoughts') &&
-          !href.includes('/about')
-        ) {
+        const isExcluded =
+          href.includes('/tags/') ||
+          href.includes('/categories/') ||
+          href.includes('/archive') ||
+          href.includes('/page/') ||
+          href.includes('/thoughts') ||
+          href.includes('/about')
+
+        if (!isExcluded) {
+          console.log('✅ 找到文章链接:', originalHref, '→', href)
           articleLinks.add(href)
+        } else {
+          console.log('⏭️  排除链接:', originalHref, '(excluded)')
         }
       }
     })
