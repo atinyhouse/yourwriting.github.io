@@ -1,24 +1,12 @@
 // URL 内容提取工具
 import { Readability } from '@mozilla/readability'
 
-// 多个 CORS 代理服务（按优先级排序）
+// 使用自建 Cloudflare Workers 代理
 const CORS_PROXIES = [
-  // 方案1：corsproxy.io (最稳定)
+  // 自建代理（最稳定可靠）
   {
-    url: 'https://corsproxy.io/?',
-    transform: (url) => 'https://corsproxy.io/?' + encodeURIComponent(url),
-    parseResponse: (res) => res.text()
-  },
-  // 方案2：ThingProxy
-  {
-    url: 'https://thingproxy.freeboard.io/fetch/',
-    transform: (url) => 'https://thingproxy.freeboard.io/fetch/' + url,
-    parseResponse: (res) => res.text()
-  },
-  // 方案3：AllOrigins (备用)
-  {
-    url: 'https://api.allorigins.win/raw?url=',
-    transform: (url) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+    url: 'https://wechat-proxy.lucca-caolu.workers.dev/?url=',
+    transform: (url) => 'https://wechat-proxy.lucca-caolu.workers.dev/?url=' + encodeURIComponent(url),
     parseResponse: (res) => res.text()
   }
 ]
