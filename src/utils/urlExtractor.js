@@ -264,18 +264,59 @@ export const extractBizFromUrl = (url) => {
   return match ? match[1] : null
 }
 
+// 获取微信文章的完整URL（处理短链接重定向）
+const getFullWechatUrl = async (url) => {
+  // 如果已经是完整链接，直接返回
+  if (url.includes('__biz=')) {
+    return url
+  }
+
+  try {
+    // 短链接需要通过代理获取重定向后的完整URL
+    console.log('检测到短链接，正在获取完整URL...')
+
+    const html = await fetchWithCORS(url)
+
+    // 尝试从HTML中提取完整链接
+    // 微信会在页面中嵌入完整URL
+    const bizMatch = html.match(/__biz=([^&"']+)/)
+    if (bizMatch) {
+      const fullBiz = bizMatch[1]
+      console.log('从HTML中提取到biz参数:', fullBiz)
+      return url + '?__biz=' + fullBiz
+    }
+
+    // 尝试从window.location或其他地方提取
+    const urlMatch = html.match(/var\s+msg_link\s*=\s*["']([^"']+)["']/)
+    if (urlMatch) {
+      const fullUrl = urlMatch[1].replace(/&amp;/g, '&')
+      console.log('从msg_link提取到完整URL:', fullUrl)
+      return fullUrl
+    }
+
+    throw new Error('无法从短链接中提取完整URL')
+  } catch (error) {
+    console.error('获取完整URL失败:', error)
+    throw error
+  }
+}
+
 // 通过RSSHub获取公众号所有文章链接
 export const fetchWechatAccountArticles = async (articleUrl) => {
   try {
-    // 1. 从单篇文章URL中提取biz参数
-    const biz = extractBizFromUrl(articleUrl)
+    // 1. 先获取完整URL（如果是短链接）
+    const fullUrl = await getFullWechatUrl(articleUrl)
+    console.log('完整URL:', fullUrl)
+
+    // 2. 从完整URL中提取biz参数
+    const biz = extractBizFromUrl(fullUrl)
     if (!biz) {
-      throw new Error('无法从链接中提取公众号ID（__biz参数）')
+      throw new Error('无法从链接中提取公众号ID（__biz参数）\n\n💡 提示：请确保链接是微信公众号文章链接')
     }
 
     console.log('提取到公众号ID:', biz)
 
-    // 2. 使用RSSHub API获取公众号文章列表
+    // 3. 使用RSSHub API获取公众号文章列表
     // RSSHub提供了微信公众号订阅：https://docs.rsshub.app/routes/social-media#wei-xin
     const rsshubUrl = `https://rsshub.app/wechat/mp/msgalbum/${biz}`
 
