@@ -360,7 +360,8 @@ import {
   extractWechatArticle,
   extractWebContent,
   extractArticleLinks,
-  batchExtractArticles
+  batchExtractArticles,
+  fetchAllArticlesFromSingleUrl
 } from '../utils/urlExtractor'
 
 const library = ref({ sources: [], analysis: null, totalWords: 0 })
@@ -533,8 +534,21 @@ const handleUrlImport = async () => {
 const handleBatchImport = async () => {
   if (!urlInput.value.trim()) return
 
-  if (!confirm('批量爬取会从该页面提取所有文章链接并逐个提取内容，\n这可能需要较长时间。\n\n确定继续吗？')) {
-    return
+  const url = urlInput.value.trim()
+
+  // 检测是否是微信公众号文章链接
+  const isWechatArticle = url.includes('mp.weixin.qq.com') && (url.includes('/s?__biz=') || url.includes('/s/'))
+
+  if (isWechatArticle) {
+    // 微信公众号文章：通过单篇文章获取整个公众号历史
+    if (!confirm('检测到微信公众号文章链接！\n\n将自动获取该公众号的所有历史文章。\n这可能需要较长时间。\n\n确定继续吗？')) {
+      return
+    }
+  } else {
+    // 普通网页：批量爬取
+    if (!confirm('批量爬取会从该页面提取所有文章链接并逐个提取内容，\n这可能需要较长时间。\n\n确定继续吗？')) {
+      return
+    }
   }
 
   isLoadingUrl.value = true
@@ -548,14 +562,23 @@ const handleBatchImport = async () => {
   }
 
   try {
-    const url = urlInput.value.trim()
     console.log('开始批量导入:', url)
 
-    // 第一步：提取所有文章链接
-    const links = await extractArticleLinks(url)
+    let links = []
+
+    if (isWechatArticle) {
+      // 微信公众号：从单篇文章获取所有历史
+      console.log('🔍 检测到微信公众号文章，正在获取整个公众号历史...')
+      const result = await fetchAllArticlesFromSingleUrl(url)
+      links = result.links
+      console.log(`✅ 成功获取 ${links.length} 篇历史文章`)
+    } else {
+      // 普通网页：提取所有文章链接
+      links = await extractArticleLinks(url)
+    }
 
     if (links.length === 0) {
-      alert('未找到任何文章链接。\n\n可能原因：\n1. 这不是博客首页\n2. 链接结构不符合常见模式\n\n请尝试导入单篇文章')
+      alert('未找到任何文章链接。\n\n可能原因：\n1. 这不是博客首页或公众号\n2. 链接结构不符合常见模式\n3. 公众号需要先关注才能查看\n\n请尝试导入单篇文章')
       return
     }
 
@@ -566,7 +589,7 @@ const handleBatchImport = async () => {
 
     batchProgress.value.total = links.length
 
-    // 第二步：批量提取文章内容
+    // 批量提取文章内容
     await batchExtractArticles(links, (progress) => {
       batchProgress.value.current = progress.current
       batchProgress.value.currentUrl = progress.url

@@ -340,36 +340,127 @@ const getFullWechatUrl = async (url) => {
   }
 }
 
-// 通过公众号历史页面获取所有文章链接（不依赖RSSHub）
-export const fetchWechatAccountArticles = async (articleUrl) => {
+// 通过单篇文章链接获取整个公众号的历史文章列表
+export const fetchAllArticlesFromSingleUrl = async (articleUrl) => {
   try {
-    console.log('⚠️ 微信公众号批量爬取功能说明：')
-    console.log('由于微信限制，无法直接获取公众号所有文章列表')
-    console.log('建议使用以下替代方案：')
-    console.log('1. 手动复制多个文章链接，使用"批量爬取网站"功能')
-    console.log('2. 使用第三方工具导出公众号文章列表')
+    console.log('🚀 开始从单篇文章获取整个公众号历史...')
+    console.log('文章链接:', articleUrl)
 
-    throw new Error(`微信公众号批量爬取功能暂不可用
+    // 步骤1: 提取 biz 参数
+    let biz = extractBizFromUrl(articleUrl)
 
-💡 替代方案：
+    if (!biz) {
+      console.log('URL中没有biz参数，尝试从HTML源代码提取...')
+      biz = await extractBizFromHTML(articleUrl)
+    }
 
-1️⃣ 手动批量导入（推荐）：
-   - 打开公众号，复制多个文章链接
-   - 创建一个简单的HTML页面，包含这些链接
-   - 使用"批量爬取网站"功能导入
+    if (!biz) {
+      throw new Error('无法从文章链接中提取公众号标识（biz参数）')
+    }
 
-2️⃣ 使用RSS订阅工具：
-   - 使用Feedly、Inoreader等RSS阅读器
-   - 订阅该公众号的RSS Feed
-   - 从RSS中获取文章列表
+    console.log('✅ 成功提取 biz:', biz)
 
-3️⃣ 浏览器插件：
-   - 使用微信公众号文章批量下载插件
-   - 导出为文本文件后批量上传
+    // 步骤2: 构建公众号历史消息页面URL
+    const profileUrl = `https://mp.weixin.qq.com/mp/profile_ext?action=home&__biz=${encodeURIComponent(biz)}`
 
-抱歉给您带来不便 🙏`)
+    console.log('📄 公众号历史消息页URL:', profileUrl)
+
+    // 步骤3: 获取历史消息页面HTML
+    console.log('正在获取公众号历史消息页面...')
+    const html = await fetchWithCORS(profileUrl)
+
+    console.log('✅ 成功获取历史消息页面，HTML长度:', html.length)
+
+    // 步骤4: 从历史消息页面提取所有文章链接
+    const doc = new DOMParser().parseFromString(html, 'text/html')
+    const articleLinks = new Set()
+
+    // 方法1: 从 msgList 数据中提取（最可靠）
+    const msgListMatch = html.match(/var\s+msgList\s*=\s*'([^']+)'/i) ||
+                        html.match(/var\s+msgList\s*=\s*"([^"]+)"/i)
+
+    if (msgListMatch) {
+      try {
+        const msgListStr = msgListMatch[1]
+          .replace(/&#39;/g, "'")
+          .replace(/&quot;/g, '"')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+
+        const msgList = JSON.parse(msgListStr)
+
+        if (msgList && msgList.list) {
+          console.log('✅ 成功解析 msgList，找到', msgList.list.length, '条消息')
+
+          msgList.list.forEach(item => {
+            // 主文章
+            if (item.app_msg_ext_info && item.app_msg_ext_info.content_url) {
+              const link = 'https://mp.weixin.qq.com' + item.app_msg_ext_info.content_url.replace(/&amp;/g, '&')
+              articleLinks.add(link)
+            }
+
+            // 多图文消息（一次推送多篇文章）
+            if (item.app_msg_ext_info && item.app_msg_ext_info.multi_app_msg_item_list) {
+              item.app_msg_ext_info.multi_app_msg_item_list.forEach(subItem => {
+                if (subItem.content_url) {
+                  const link = 'https://mp.weixin.qq.com' + subItem.content_url.replace(/&amp;/g, '&')
+                  articleLinks.add(link)
+                }
+              })
+            }
+          })
+        }
+      } catch (e) {
+        console.error('解析 msgList 失败:', e)
+      }
+    }
+
+    // 方法2: 从 <a> 标签中提取（备用方法）
+    const allLinks = doc.querySelectorAll('a[href]')
+    allLinks.forEach(link => {
+      let href = link.getAttribute('href')
+      if (!href) return
+
+      // 微信文章链接特征
+      if (href.includes('/s?__biz=') || href.includes('/s/')) {
+        // 处理相对路径
+        if (href.startsWith('/')) {
+          href = 'https://mp.weixin.qq.com' + href
+        }
+
+        // 确保是完整URL
+        if (href.startsWith('http')) {
+          articleLinks.add(href.replace(/&amp;/g, '&'))
+        }
+      }
+    })
+
+    const links = Array.from(articleLinks)
+    console.log(`🎉 成功提取 ${links.length} 篇文章链接`)
+
+    if (links.length === 0) {
+      throw new Error(`未能从公众号历史页面提取到文章链接
+
+可能原因：
+1. 该公众号没有历史文章
+2. 需要先关注公众号才能查看历史消息
+3. 微信限制了访问（请稍后重试）
+
+💡 建议：
+- 确认该公众号有已发布的文章
+- 尝试在微信中关注该公众号后重试
+- 或使用"手动复制粘贴"方法`)
+    }
+
+    return {
+      biz,
+      profileUrl,
+      links,
+      count: links.length
+    }
   } catch (error) {
-    console.error('批量获取失败:', error)
+    console.error('❌ 从单篇文章获取公众号历史失败:', error)
     throw error
   }
 }
