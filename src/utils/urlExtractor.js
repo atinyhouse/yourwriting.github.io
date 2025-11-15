@@ -3,9 +3,24 @@ import { Readability } from '@mozilla/readability'
 
 // 多个 CORS 代理服务（按优先级排序）
 const CORS_PROXIES = [
-  'https://api.allorigins.win/get?url=',
-  'https://cors-proxy.htmldriven.com/?url=',
-  'https://api.codetabs.com/v1/proxy?quest=',
+  // 方案1：corsproxy.io (最稳定)
+  {
+    url: 'https://corsproxy.io/?',
+    transform: (url) => 'https://corsproxy.io/?' + encodeURIComponent(url),
+    parseResponse: (res) => res.text()
+  },
+  // 方案2：ThingProxy
+  {
+    url: 'https://thingproxy.freeboard.io/fetch/',
+    transform: (url) => 'https://thingproxy.freeboard.io/fetch/' + url,
+    parseResponse: (res) => res.text()
+  },
+  // 方案3：AllOrigins (备用)
+  {
+    url: 'https://api.allorigins.win/raw?url=',
+    transform: (url) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+    parseResponse: (res) => res.text()
+  }
 ]
 
 // 使用多个代理尝试获取网页内容
@@ -14,57 +29,42 @@ const fetchWithCORS = async (url) => {
 
   // 尝试所有代理
   for (let i = 0; i < CORS_PROXIES.length; i++) {
-    const proxyUrl = CORS_PROXIES[i] + encodeURIComponent(url)
+    const proxy = CORS_PROXIES[i]
+    const proxyUrl = proxy.transform(url)
 
     try {
-      console.log(`尝试代理 ${i + 1}/${CORS_PROXIES.length}:`, proxyUrl)
+      console.log(`尝试代理 ${i + 1}/${CORS_PROXIES.length}:`, proxy.url)
 
       const response = await fetch(proxyUrl, {
         method: 'GET',
         headers: {
-          'Accept': 'application/json, text/html, */*',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         },
-        signal: AbortSignal.timeout(15000) // 15秒超时
+        signal: AbortSignal.timeout(20000) // 20秒超时
       })
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)
       }
 
-      // AllOrigins 返回 JSON 格式
-      if (CORS_PROXIES[i].includes('allorigins')) {
-        const data = await response.json()
-        if (data.contents) {
-          console.log('成功获取内容（AllOrigins）')
-          return data.contents
-        }
-      }
-      // codetabs 返回纯文本
-      else if (CORS_PROXIES[i].includes('codetabs')) {
-        const html = await response.text()
-        if (html && html.length > 100) {
-          console.log('成功获取内容（CodeTabs）')
-          return html
-        }
-      }
-      // HTMLDriven 返回纯 HTML
-      else {
-        const html = await response.text()
-        if (html && html.length > 100) {
-          console.log('成功获取内容（HTMLDriven）')
-          return html
-        }
+      const html = await proxy.parseResponse(response)
+
+      if (html && html.length > 1000 && !html.includes('<!DOCTYPE html><!--[if lt IE 7]>')) {
+        console.log(`✅ 成功获取内容（代理 ${i + 1}），长度:`, html.length)
+        return html
+      } else {
+        console.warn(`代理 ${i + 1} 返回内容异常，尝试下一个`)
+        continue
       }
     } catch (error) {
       console.error(`代理 ${i + 1} 失败:`, error.message)
       lastError = error
-      // 继续尝试下一个代理
       continue
     }
   }
 
   // 所有代理都失败
-  throw new Error(`所有代理服务都无法访问该链接。\n原因：${lastError?.message || '网络错误'}\n\n建议：\n1. 检查网络连接\n2. 使用"直接粘贴内容"功能\n3. 稍后重试`)
+  throw new Error(`所有代理服务都无法访问该链接。\n最后错误：${lastError?.message || '网络错误'}\n\n💡 建议：\n1. 检查网络连接\n2. 使用"直接粘贴内容"功能\n3. 稍后重试`)
 }
 
 // 提取微信公众号文章内容（使用 Mozilla Readability 算法）
