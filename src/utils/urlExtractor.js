@@ -301,70 +301,37 @@ const getFullWechatUrl = async (url) => {
   }
 }
 
-// 通过RSSHub获取公众号所有文章链接
+// 通过公众号历史页面获取所有文章链接（不依赖RSSHub）
 export const fetchWechatAccountArticles = async (articleUrl) => {
   try {
-    // 1. 先获取完整URL（如果是短链接）
-    const fullUrl = await getFullWechatUrl(articleUrl)
-    console.log('完整URL:', fullUrl)
+    console.log('⚠️ 微信公众号批量爬取功能说明：')
+    console.log('由于微信限制，无法直接获取公众号所有文章列表')
+    console.log('建议使用以下替代方案：')
+    console.log('1. 手动复制多个文章链接，使用"批量爬取网站"功能')
+    console.log('2. 使用第三方工具导出公众号文章列表')
 
-    // 2. 从完整URL中提取biz参数
-    const biz = extractBizFromUrl(fullUrl)
-    if (!biz) {
-      throw new Error('无法从链接中提取公众号ID（__biz参数）\n\n💡 提示：请确保链接是微信公众号文章链接')
-    }
+    throw new Error(`微信公众号批量爬取功能暂不可用
 
-    console.log('提取到公众号ID:', biz)
+💡 替代方案：
 
-    // 3. 使用RSSHub API获取公众号文章列表
-    // RSSHub提供了微信公众号订阅：https://docs.rsshub.app/routes/social-media#wei-xin
-    const rsshubUrl = `https://rsshub.app/wechat/mp/msgalbum/${biz}`
+1️⃣ 手动批量导入（推荐）：
+   - 打开公众号，复制多个文章链接
+   - 创建一个简单的HTML页面，包含这些链接
+   - 使用"批量爬取网站"功能导入
 
-    console.log('请求RSSHub:', rsshubUrl)
+2️⃣ 使用RSS订阅工具：
+   - 使用Feedly、Inoreader等RSS阅读器
+   - 订阅该公众号的RSS Feed
+   - 从RSS中获取文章列表
 
-    const response = await fetch(rsshubUrl, {
-      headers: {
-        'Accept': 'application/xml, application/rss+xml, text/xml'
-      }
-    })
+3️⃣ 浏览器插件：
+   - 使用微信公众号文章批量下载插件
+   - 导出为文本文件后批量上传
 
-    if (!response.ok) {
-      throw new Error(`RSSHub请求失败: HTTP ${response.status}`)
-    }
-
-    const xmlText = await response.text()
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(xmlText, 'text/xml')
-
-    // 3. 解析RSS中的文章链接
-    const items = doc.querySelectorAll('item')
-    const articles = []
-
-    items.forEach(item => {
-      const link = item.querySelector('link')?.textContent
-      const title = item.querySelector('title')?.textContent
-      const pubDate = item.querySelector('pubDate')?.textContent
-
-      if (link && link.includes('mp.weixin.qq.com')) {
-        articles.push({
-          url: link.trim(),
-          title: title?.trim() || '未命名',
-          pubDate: pubDate ? new Date(pubDate) : null
-        })
-      }
-    })
-
-    console.log(`从RSSHub获取到 ${articles.length} 篇文章`)
-
-    if (articles.length === 0) {
-      throw new Error('该公众号暂无文章，或RSSHub暂时无法获取。\\n\\n💡 建议：手动复制多个文章链接，使用"批量爬取"功能')
-    }
-
-    return articles
-
+抱歉给您带来不便 🙏`)
   } catch (error) {
-    console.error('获取公众号文章列表失败:', error)
-    throw new Error(`获取公众号文章失败: ${error.message}`)
+    console.error('批量获取失败:', error)
+    throw error
   }
 }
 

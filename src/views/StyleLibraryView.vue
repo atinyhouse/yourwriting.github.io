@@ -26,7 +26,7 @@
         <!-- URL 导入 -->
         <div class="url-input">
           <h3>从链接导入</h3>
-          <p>✨ 支持单篇文章、整个公众号、或博客网站批量导入</p>
+          <p>✨ 支持单篇文章或整个博客/网站批量导入</p>
           <input
             v-model="urlInput"
             type="url"
@@ -37,16 +37,19 @@
             <button @click="handleUrlImport" :disabled="!urlInput.trim() || isLoadingUrl">
               {{ isLoadingUrl ? '正在提取...' : '导入单篇文章' }}
             </button>
-            <button
-              v-if="urlInput.includes('mp.weixin.qq.com')"
-              @click="handleWechatAccountImport"
-              class="accent"
-              :disabled="!urlInput.trim() || isLoadingUrl">
-              {{ isLoadingUrl ? '获取公众号中...' : '📚 爬取整个公众号' }}
-            </button>
             <button @click="handleBatchImport" class="secondary" :disabled="!urlInput.trim() || isLoadingUrl">
               {{ isLoadingUrl ? '批量提取中...' : '批量爬取网站' }}
             </button>
+          </div>
+
+          <!-- 微信公众号提示 -->
+          <div v-if="urlInput.includes('mp.weixin.qq.com')" class="wechat-tip mt-sm">
+            <p><strong>💡 微信公众号批量导入提示：</strong></p>
+            <p>由于微信限制，暂不支持一键爬取整个公众号。建议：</p>
+            <ol>
+              <li>手动复制多个文章链接，创建HTML页面后使用"批量爬取网站"</li>
+              <li>或使用"直接粘贴内容"功能逐篇导入</li>
+            </ol>
           </div>
 
           <!-- 批量导入进度 -->
@@ -288,8 +291,7 @@ import {
   extractWechatArticle,
   extractWebContent,
   extractArticleLinks,
-  batchExtractArticles,
-  fetchWechatAccountArticles
+  batchExtractArticles
 } from '../utils/urlExtractor'
 
 const library = ref({ sources: [], analysis: null, totalWords: 0 })
@@ -453,83 +455,6 @@ const handleUrlImport = async () => {
     }
 
     alert(errorMsg)
-  } finally {
-    isLoadingUrl.value = false
-  }
-}
-
-// 爬取整个公众号的文章
-const handleWechatAccountImport = async () => {
-  if (!urlInput.value.trim()) return
-
-  if (!confirm('将通过RSSHub获取该公众号的所有文章并批量导入。\n\n这可能需要较长时间，确定继续吗？')) {
-    return
-  }
-
-  isLoadingUrl.value = true
-  batchProgress.value = {
-    show: true,
-    current: 0,
-    total: 0,
-    currentUrl: '',
-    success: 0,
-    failed: 0
-  }
-
-  try {
-    const url = urlInput.value.trim()
-    console.log('开始获取公众号所有文章:', url)
-
-    // 第一步：通过RSSHub获取文章列表
-    const articles = await fetchWechatAccountArticles(url)
-
-    if (articles.length === 0) {
-      alert('未找到任何文章')
-      return
-    }
-
-    const proceed = confirm(`找到 ${articles.length} 篇文章。\n\n确定要全部导入吗？\n\n注意：这可能需要 ${Math.ceil(articles.length / 60)} 到 ${Math.ceil(articles.length / 30)} 分钟。`)
-    if (!proceed) {
-      return
-    }
-
-    batchProgress.value.total = articles.length
-
-    // 第二步：批量提取文章内容
-    const links = articles.map(a => a.url)
-    await batchExtractArticles(links, (progress) => {
-      batchProgress.value.current = progress.current
-      batchProgress.value.currentUrl = progress.url
-
-      if (progress.status === 'success') {
-        batchProgress.value.success++
-
-        // 立即添加到文风库
-        const cleanedContent = cleanContent(progress.article.content)
-        if (cleanedContent && cleanedContent.length >= 200) {
-          addToStyleLibrary({
-            type: 'url',
-            title: progress.article.title,
-            content: cleanedContent,
-            url: progress.url
-          })
-        }
-      } else if (progress.status === 'failed') {
-        batchProgress.value.failed++
-      }
-    })
-
-    // 刷新文风库并重新分析
-    library.value = await getStyleLibrary()
-    await reanalyze()
-
-    urlInput.value = ''
-    alert(`✅ 批量导入完成！\n\n总计: ${articles.length} 篇\n成功: ${batchProgress.value.success} 篇\n失败: ${batchProgress.value.failed} 篇`)
-
-    batchProgress.value.show = false
-  } catch (error) {
-    console.error('批量导入公众号失败:', error)
-    alert(`批量导入失败: ${error.message}`)
   } finally {
     isLoadingUrl.value = false
   }
@@ -1100,6 +1025,28 @@ const getPerspectiveLabel = (dominant) => {
   font-size: 12px;
   color: var(--color-gray-dark);
   font-weight: 400;
+}
+
+.wechat-tip {
+  padding: var(--spacing-md);
+  background-color: #fff8e1;
+  border: 2px solid #ffc107;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.wechat-tip p {
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.wechat-tip ol {
+  margin: var(--spacing-xs) 0 0 0;
+  padding-left: 20px;
+}
+
+.wechat-tip li {
+  margin: var(--spacing-xs) 0;
 }
 
 @media (max-width: 768px) {
