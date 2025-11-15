@@ -23,6 +23,21 @@
           <button @click="$refs.fileInput.click()">选择文件</button>
         </div>
 
+        <!-- URL 导入 -->
+        <div class="url-input">
+          <h3>从链接导入</h3>
+          <p>支持微信公众号文章、博客等网页链接</p>
+          <input
+            v-model="urlInput"
+            type="url"
+            placeholder="粘贴文章链接，例如：https://mp.weixin.qq.com/s/..."
+            class="mt-sm"
+          />
+          <button @click="handleUrlImport" class="mt-sm" :disabled="!urlInput.trim() || isLoadingUrl">
+            {{ isLoadingUrl ? '正在获取...' : '从链接导入' }}
+          </button>
+        </div>
+
         <!-- 手动输入 -->
         <div class="manual-input">
           <h3>或直接粘贴内容</h3>
@@ -137,10 +152,13 @@ import {
   saveStyleLibrary
 } from '../utils/storage'
 import { analyzeWritingStyle, cleanContent } from '../utils/styleAnalysis'
+import { detectUrlType, extractWechatArticle, extractWebContent } from '../utils/urlExtractor'
 
 const library = ref({ sources: [], analysis: null, totalWords: 0 })
 const manualContent = ref('')
 const manualTitle = ref('')
+const urlInput = ref('')
+const isLoadingUrl = ref(false)
 const fileInput = ref(null)
 
 onMounted(async () => {
@@ -215,6 +233,56 @@ const handleManualAdd = async () => {
   manualTitle.value = ''
 }
 
+const handleUrlImport = async () => {
+  if (!urlInput.value.trim()) return
+
+  isLoadingUrl.value = true
+
+  try {
+    const url = urlInput.value.trim()
+    const urlType = detectUrlType(url)
+
+    let article
+
+    if (urlType === 'wechat') {
+      // 提示用户：由于技术限制，暂时需要手动复制
+      alert('温馨提示：\n\n由于微信公众号的访问限制，暂时无法自动提取文章内容。\n\n建议操作：\n1. 打开该文章链接\n2. 复制文章全文\n3. 使用下方"直接粘贴内容"功能添加\n\n我们正在开发更好的解决方案！')
+      isLoadingUrl.value = false
+      return
+    } else {
+      // 其他网页也提示手动复制
+      alert('温馨提示：\n\n由于浏览器安全限制，暂时无法自动提取网页内容。\n\n建议操作：\n1. 打开该网页\n2. 复制文章正文\n3. 使用下方"直接粘贴内容"功能添加')
+      isLoadingUrl.value = false
+      return
+    }
+
+    // 以下代码保留，未来可能启用
+    // const cleanedContent = cleanContent(article.content)
+
+    // if (!cleanedContent || cleanedContent.length < 50) {
+    //   alert('提取的内容太少，请检查链接是否正确')
+    //   return
+    // }
+
+    // await addToStyleLibrary({
+    //   type: 'url',
+    //   title: article.title,
+    //   content: cleanedContent,
+    //   url: url
+    // })
+
+    // library.value = await getStyleLibrary()
+    // await reanalyze()
+
+    // urlInput.value = ''
+    // alert('导入成功！')
+  } catch (error) {
+    alert(`导入失败: ${error.message}`)
+  } finally {
+    isLoadingUrl.value = false
+  }
+}
+
 const removeSource = async (id) => {
   if (!confirm('确定要删除这条内容吗？')) return
 
@@ -281,13 +349,13 @@ const getToneLabel = (tone) => {
   margin-bottom: var(--spacing-md);
 }
 
-.upload-section, .manual-input {
+.upload-section, .manual-input, .url-input {
   margin-bottom: var(--spacing-lg);
   padding-bottom: var(--spacing-lg);
   border-bottom: 1px solid var(--color-gray);
 }
 
-.upload-section:last-child, .manual-input:last-child {
+.upload-section:last-child, .manual-input:last-child, .url-input:last-child {
   border-bottom: none;
   padding-bottom: 0;
   margin-bottom: 0;
