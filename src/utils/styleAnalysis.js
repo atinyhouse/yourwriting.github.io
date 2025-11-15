@@ -1,5 +1,65 @@
 // 文风分析工具
 
+// 清洗内容 - 移除无用的系统文字和噪音
+export const cleanContent = (text) => {
+  if (!text) return ''
+
+  let cleaned = text
+
+  // 移除常见的公众号系统提示
+  const noisePatterns = [
+    /点击上方.*?关注/g,
+    /点击.*?蓝字.*?关注/g,
+    /关注.*?公众号/g,
+    /长按.*?二维码.*?关注/g,
+    /扫描.*?二维码.*?关注/g,
+    /推荐阅读/g,
+    /往期.*?回顾/g,
+    /点击.*?阅读原文/g,
+    /阅读原文/g,
+    /原文链接/g,
+    /转载请注明出处/g,
+    /版权声明/g,
+    /免责声明/g,
+    /商务合作/g,
+    /投稿邮箱/g,
+    /联系.*?微信/g,
+    /添加.*?微信/g,
+    /文章.*?来源/g,
+    /.*?整理.*?编辑/g,
+    /点赞.*?在看/g,
+    /分享.*?点赞/g,
+    /喜欢.*?点.*?在看/g,
+    /预览时标签不可点/g,
+    /微信扫一扫/g,
+    /使用小程序/g,
+    /取消/g,
+    /允许/g,
+    /即将打开.*?小程序/g,
+  ]
+
+  noisePatterns.forEach(pattern => {
+    cleaned = cleaned.replace(pattern, '')
+  })
+
+  // 移除多余的空行（保留段落结构）
+  cleaned = cleaned.replace(/\n\s*\n\s*\n/g, '\n\n')
+
+  // 移除首尾空白
+  cleaned = cleaned.trim()
+
+  // 移除过短的行（可能是系统文字，少于5个字）
+  cleaned = cleaned.split('\n')
+    .filter(line => {
+      const trimmed = line.trim()
+      // 保留空行（段落分隔）或长度>=5的行
+      return trimmed.length === 0 || trimmed.length >= 5
+    })
+    .join('\n')
+
+  return cleaned
+}
+
 // 分词 - 简单实现（中文按字符，英文按单词）
 export const tokenize = (text) => {
   // 移除多余空白
@@ -28,10 +88,19 @@ export const extractKeywords = (texts, topN = 20) => {
   const allText = texts.join(' ')
   const tokens = tokenize(allText)
 
-  // 停用词（简化版）
+  // 扩展的停用词列表
   const stopWords = new Set([
+    // 基础停用词
     '的', '了', '在', '是', '我', '有', '和', '就', '不', '人', '都', '一', '一个', '上', '也', '很', '到', '说', '要', '去', '你', '会', '着', '没有', '看', '好', '自己', '这',
-    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can'
+    '个', '们', '为', '能', '他', '她', '它', '多', '来', '年', '对', '与', '及', '以', '等', '但', '或', '而', '中', '里', '下', '大', '小', '么', '给', '从', '把', '被', '让',
+    '出', '可', '用', '成', '因', '作', '更', '过', '还', '之', '所', '如', '其', '只', '两', '三', '些', '最', '已', '于', '时', '后', '前', '间', '天', '月', '日', '想', '得',
+    '种', '点', '方', '面', '次', '现', '关', '因为', '所以', '但是', '然后', '已经', '还是', '可以', '这个', '那个', '什么', '怎么', '为什么', '的话', '如果', '虽然',
+    // 公众号常见词
+    '文章', '内容', '阅读', '关注', '分享', '点击', '扫码', '二维码', '微信', '公众号', '推荐', '精彩', '原创', '转载', '来源', '编辑', '整理', '排版', '图片', '视频',
+    // 数字
+    '一', '二', '三', '四', '五', '六', '七', '八', '九', '十',
+    // 英文停用词
+    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those', 'it', 'its', 'they', 'them', 'their'
   ])
 
   // 统计词频

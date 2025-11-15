@@ -136,7 +136,7 @@ import {
   clearStyleLibrary,
   saveStyleLibrary
 } from '../utils/storage'
-import { analyzeWritingStyle } from '../utils/styleAnalysis'
+import { analyzeWritingStyle, cleanContent } from '../utils/styleAnalysis'
 
 const library = ref({ sources: [], analysis: null, totalWords: 0 })
 const manualContent = ref('')
@@ -154,10 +154,18 @@ const handleFileUpload = async (event) => {
   for (const file of files) {
     try {
       const content = await readFile(file)
+      // 清洗内容，移除公众号系统文字
+      const cleanedContent = cleanContent(content)
+
+      if (!cleanedContent || cleanedContent.length < 50) {
+        alert(`文件 ${file.name} 内容太少或清洗后为空，已跳过`)
+        continue
+      }
+
       await addToStyleLibrary({
         type: 'document',
         title: file.name,
-        content,
+        content: cleanedContent,
         url: null
       })
     } catch (error) {
@@ -184,10 +192,18 @@ const readFile = (file) => {
 const handleManualAdd = async () => {
   if (!manualContent.value.trim()) return
 
+  // 清洗内容，移除公众号系统文字
+  const cleanedContent = cleanContent(manualContent.value.trim())
+
+  if (!cleanedContent || cleanedContent.length < 50) {
+    alert('内容太少或清洗后为空，请检查内容是否包含有效文字')
+    return
+  }
+
   await addToStyleLibrary({
     type: 'manual',
     title: manualTitle.value || '手动添加',
-    content: manualContent.value.trim(),
+    content: cleanedContent,
     url: null
   })
 
