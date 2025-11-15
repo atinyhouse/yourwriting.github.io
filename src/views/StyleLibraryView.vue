@@ -26,7 +26,7 @@
         <!-- URL 导入 -->
         <div class="url-input">
           <h3>从链接导入</h3>
-          <p>支持微信公众号文章、博客等网页链接</p>
+          <p>✨ 自动提取微信公众号文章、博客等网页内容</p>
           <input
             v-model="urlInput"
             type="url"
@@ -34,7 +34,7 @@
             class="mt-sm"
           />
           <button @click="handleUrlImport" class="mt-sm" :disabled="!urlInput.trim() || isLoadingUrl">
-            {{ isLoadingUrl ? '正在获取...' : '从链接导入' }}
+            {{ isLoadingUrl ? '正在提取...' : '自动提取并导入' }}
           </button>
         </div>
 
@@ -245,39 +245,37 @@ const handleUrlImport = async () => {
     let article
 
     if (urlType === 'wechat') {
-      // 提示用户：由于技术限制，暂时需要手动复制
-      alert('温馨提示：\n\n由于微信公众号的访问限制，暂时无法自动提取文章内容。\n\n建议操作：\n1. 打开该文章链接\n2. 复制文章全文\n3. 使用下方"直接粘贴内容"功能添加\n\n我们正在开发更好的解决方案！')
-      isLoadingUrl.value = false
-      return
+      // 使用 CORS 代理提取微信公众号文章
+      article = await extractWechatArticle(url)
     } else {
-      // 其他网页也提示手动复制
-      alert('温馨提示：\n\n由于浏览器安全限制，暂时无法自动提取网页内容。\n\n建议操作：\n1. 打开该网页\n2. 复制文章正文\n3. 使用下方"直接粘贴内容"功能添加')
-      isLoadingUrl.value = false
+      // 提取其他网页内容
+      article = await extractWebContent(url)
+    }
+
+    // 清洗内容
+    const cleanedContent = cleanContent(article.content)
+
+    if (!cleanedContent || cleanedContent.length < 50) {
+      alert('提取的内容太少或清洗后为空，请检查链接是否正确')
       return
     }
 
-    // 以下代码保留，未来可能启用
-    // const cleanedContent = cleanContent(article.content)
+    // 添加到文风库
+    await addToStyleLibrary({
+      type: 'url',
+      title: article.title,
+      content: cleanedContent,
+      url: url
+    })
 
-    // if (!cleanedContent || cleanedContent.length < 50) {
-    //   alert('提取的内容太少，请检查链接是否正确')
-    //   return
-    // }
+    library.value = await getStyleLibrary()
+    await reanalyze()
 
-    // await addToStyleLibrary({
-    //   type: 'url',
-    //   title: article.title,
-    //   content: cleanedContent,
-    //   url: url
-    // })
-
-    // library.value = await getStyleLibrary()
-    // await reanalyze()
-
-    // urlInput.value = ''
-    // alert('导入成功！')
+    urlInput.value = ''
+    alert('导入成功！')
   } catch (error) {
-    alert(`导入失败: ${error.message}`)
+    console.error('导入失败:', error)
+    alert(`导入失败: ${error.message}\n\n如果是微信公众号文章，请确保：\n1. 链接完整且有效\n2. 文章未被删除或设置为仅粉丝可见`)
   } finally {
     isLoadingUrl.value = false
   }
