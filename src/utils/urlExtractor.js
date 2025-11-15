@@ -375,15 +375,31 @@ export const fetchWechatAccountArticles = async (articleUrl) => {
 }
 
 // 从页面中提取所有文章链接（支持微信公众号历史消息页面）
-export const extractArticleLinks = async (url) => {
+// 支持两种输入：URL 或 HTML 源代码
+export const extractArticleLinks = async (urlOrHtml) => {
   try {
-    console.log('开始提取页面中的所有文章链接:', url)
+    console.log('开始提取页面中的所有文章链接')
 
-    const html = await fetchWithCORS(url)
+    let html
+    let isWechatPage = false
+
+    // 检测输入是 URL 还是 HTML 源代码
+    if (urlOrHtml.trim().startsWith('http://') || urlOrHtml.trim().startsWith('https://')) {
+      // 输入是 URL
+      const url = urlOrHtml.trim()
+      console.log('输入类型：URL -', url)
+      isWechatPage = url.includes('mp.weixin.qq.com')
+      html = await fetchWithCORS(url)
+    } else if (urlOrHtml.trim().startsWith('<')) {
+      // 输入是 HTML 源代码
+      console.log('输入类型：HTML 源代码，长度:', urlOrHtml.length)
+      html = urlOrHtml
+      isWechatPage = html.includes('mp.weixin.qq.com') || html.includes('var msgList')
+    } else {
+      throw new Error('无效的输入格式。请输入 URL 或粘贴 HTML 源代码')
+    }
+
     const doc = new DOMParser().parseFromString(html, 'text/html')
-
-    // 检测是否是微信公众号页面
-    const isWechatPage = url.includes('mp.weixin.qq.com')
 
     // 查找所有链接
     const allLinks = doc.querySelectorAll('a[href]')

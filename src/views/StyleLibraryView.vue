@@ -44,16 +44,80 @@
 
           <!-- 微信公众号提示 -->
           <div v-if="urlInput.includes('mp.weixin.qq.com')" class="wechat-tip mt-sm">
-            <p><strong>💡 微信公众号批量导入指南：</strong></p>
+            <p><strong>💡 微信公众号批量导入 - 完整解决方案：</strong></p>
             <div class="tip-content">
-              <p><strong>✅ 推荐方法：</strong>使用"批量爬取网站"</p>
-              <ol>
-                <li>在微信中打开公众号主页</li>
-                <li>点击右上角"..."，选择"复制链接"</li>
-                <li>将链接粘贴到上方输入框</li>
-                <li>点击"批量爬取网站"按钮</li>
-              </ol>
-              <p class="note">⚠️ 批量提取可能需要较长时间，请耐心等待</p>
+
+              <div class="method-section">
+                <p><strong>✅ 方法1：单篇文章导入（最简单）</strong></p>
+                <ol>
+                  <li>在微信中打开任意一篇文章</li>
+                  <li>点击右上角 "..." → 选择"复制链接"</li>
+                  <li>粘贴链接到上方输入框，点击"导入单篇文章"</li>
+                </ol>
+              </div>
+
+              <div class="method-section">
+                <p><strong>✅ 方法2：浏览器批量提取（推荐）</strong></p>
+                <ol>
+                  <li><strong>电脑端微信：</strong>打开公众号主页 → 右键"在浏览器中打开"</li>
+                  <li><strong>手机端：</strong>复制公众号任意文章链接，电脑浏览器打开后点击公众号名称进入主页</li>
+                  <li>在浏览器中滚动公众号历史消息页面，加载更多文章</li>
+                  <li>右键 → "查看网页源代码"（或按 Ctrl+U / Cmd+Option+U）</li>
+                  <li>复制整个 HTML 源代码</li>
+                  <li>将 HTML 源代码粘贴到下方"直接粘贴内容"区域</li>
+                  <li>点击"批量爬取网站"，系统会自动从 HTML 中提取所有文章链接</li>
+                </ol>
+                <p class="note-success">✨ 这个方法可以一次性获取加载出来的所有历史文章</p>
+              </div>
+
+              <div class="method-section">
+                <p><strong>✅ 方法3：手动复制粘贴（最稳定）</strong></p>
+                <ol>
+                  <li>打开微信文章，全选内容（Ctrl+A / Cmd+A）</li>
+                  <li>复制（Ctrl+C / Cmd+C）</li>
+                  <li>粘贴到下方"直接粘贴内容"区域</li>
+                  <li>填写标题（可选），点击"添加到文风库"</li>
+                </ol>
+                <p class="note-info">💡 适合文章较少或需要精选的情况</p>
+              </div>
+
+              <div class="method-section">
+                <p><strong>✅ 方法4：第三方工具（外部方案）</strong></p>
+                <p>如需导出大量历史文章，可使用以下工具：</p>
+                <ul>
+                  <li><strong>WechatDownload</strong> - 支持批量下载文章和评论</li>
+                  <li><strong>公众号文章导出助手</strong> - 导出为 Word/PDF/HTML</li>
+                  <li><strong>浏览器插件</strong> - 搜索"微信公众号文章下载"</li>
+                </ul>
+                <p class="note-warning">⚠️ 导出后将内容粘贴到本工具的"直接粘贴内容"区域</p>
+              </div>
+
+              <div class="method-section">
+                <p><strong>✅ 方法5：开发者方法（技术用户）</strong></p>
+                <ol>
+                  <li>浏览器打开公众号历史消息页</li>
+                  <li>按 F12 打开开发者工具</li>
+                  <li>切换到 Console 标签页</li>
+                  <li>运行以下代码提取所有文章链接：</li>
+                </ol>
+                <pre class="code-block">
+// 提取当前页面所有文章链接
+const links = Array.from(document.querySelectorAll('a[href*="/s?__biz="]'))
+  .map(a => a.href)
+  .filter((v, i, arr) => arr.indexOf(v) === i);
+console.log(links.join('\\n'));
+copy(links.join('\\n')); // 复制到剪贴板
+                </pre>
+                <p class="note-info">💻 将输出的链接列表保存为 HTML 文件，然后用"批量爬取网站"导入</p>
+              </div>
+
+              <p class="final-note"><strong>⚡ 快速选择：</strong></p>
+              <ul>
+                <li>单篇文章 → 方法1</li>
+                <li>10篇以内 → 方法3（手动复制粘贴）</li>
+                <li>10-50篇 → 方法2（浏览器HTML源代码）</li>
+                <li>50篇以上 → 方法4（第三方工具）+ 方法3（粘贴导入）</li>
+              </ul>
             </div>
           </div>
 
@@ -1045,13 +1109,84 @@ const getPerspectiveLabel = (dominant) => {
   margin: 0 0 var(--spacing-xs) 0;
 }
 
-.wechat-tip ol {
+.wechat-tip .tip-content {
+  margin-top: var(--spacing-sm);
+}
+
+.wechat-tip .method-section {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background-color: rgba(255, 255, 255, 0.5);
+  border-left: 3px solid #ff9800;
+  border-radius: 2px;
+}
+
+.wechat-tip .method-section:last-of-type {
+  margin-bottom: var(--spacing-sm);
+}
+
+.wechat-tip ol,
+.wechat-tip ul {
   margin: var(--spacing-xs) 0 0 0;
-  padding-left: 20px;
+  padding-left: 24px;
 }
 
 .wechat-tip li {
   margin: var(--spacing-xs) 0;
+}
+
+.wechat-tip .code-block {
+  background-color: #2d2d2d;
+  color: #f8f8f2;
+  padding: var(--spacing-sm);
+  margin: var(--spacing-xs) 0;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-x: auto;
+  border-radius: 4px;
+}
+
+.wechat-tip .note-success {
+  color: #2e7d32;
+  background-color: #e8f5e9;
+  padding: var(--spacing-xs);
+  border-radius: 4px;
+  margin-top: var(--spacing-xs);
+  font-size: 13px;
+}
+
+.wechat-tip .note-info {
+  color: #1565c0;
+  background-color: #e3f2fd;
+  padding: var(--spacing-xs);
+  border-radius: 4px;
+  margin-top: var(--spacing-xs);
+  font-size: 13px;
+}
+
+.wechat-tip .note-warning {
+  color: #e65100;
+  background-color: #fff3e0;
+  padding: var(--spacing-xs);
+  border-radius: 4px;
+  margin-top: var(--spacing-xs);
+  font-size: 13px;
+}
+
+.wechat-tip .final-note {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-sm);
+  border-top: 2px solid #ffc107;
+  font-weight: 600;
+}
+
+.wechat-tip .final-note ul {
+  margin-top: var(--spacing-xs);
+}
+
+.wechat-tip .final-note li {
+  font-weight: 400;
 }
 
 @media (max-width: 768px) {
