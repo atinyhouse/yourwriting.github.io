@@ -108,48 +108,155 @@
 
       <!-- 文风分析结果 -->
       <div v-if="library.analysis" class="section accent-blue">
-        <h2>文风分析结果</h2>
+        <div class="section-header">
+          <h2>文风分析结果</h2>
+          <span class="data-badge">基于 {{ library.analysis.totalWords.toLocaleString() }} 字分析</span>
+        </div>
 
-        <div class="analysis-grid">
-          <div class="analysis-item">
-            <h4>总字数</h4>
-            <p class="number">{{ library.analysis.totalWords.toLocaleString() }}</p>
+        <!-- 1. 语言风格 -->
+        <div class="analysis-category">
+          <h3>1️⃣ 语言风格</h3>
+          <div class="style-grid">
+            <div class="style-card">
+              <div class="label">整体语气</div>
+              <div class="value-large">{{ getToneLabel(library.analysis.tone) }}</div>
+            </div>
+            <div class="style-card">
+              <div class="label">平均句长</div>
+              <div class="value-large">{{ library.analysis.avgSentenceLength }} 字</div>
+              <div class="hint">{{ getSentenceLengthHint(library.analysis.avgSentenceLength) }}</div>
+            </div>
           </div>
 
-          <div class="analysis-item">
-            <h4>语气风格</h4>
-            <p>{{ getToneLabel(library.analysis.tone) }}</p>
-          </div>
-
-          <div class="analysis-item">
-            <h4>平均句长</h4>
-            <p>{{ library.analysis.avgSentenceLength }} 字</p>
+          <!-- 句式复杂度 -->
+          <div v-if="library.analysis.complexity" class="complexity-section mt-sm">
+            <div class="label">句式复杂度：{{ getComplexityLabel(library.analysis.complexity.diversity) }}</div>
+            <div class="complexity-bars">
+              <div class="complexity-bar">
+                <div class="bar-label">简单句</div>
+                <div class="bar-container">
+                  <div class="bar-fill" :style="{ width: library.analysis.complexity.simple + '%' }"></div>
+                  <span class="bar-value">{{ library.analysis.complexity.simple }}%</span>
+                </div>
+              </div>
+              <div class="complexity-bar">
+                <div class="bar-label">复合句</div>
+                <div class="bar-container">
+                  <div class="bar-fill" :style="{ width: library.analysis.complexity.compound + '%' }"></div>
+                  <span class="bar-value">{{ library.analysis.complexity.compound }}%</span>
+                </div>
+              </div>
+              <div class="complexity-bar">
+                <div class="bar-label">复杂句</div>
+                <div class="bar-container">
+                  <div class="bar-fill" :style="{ width: library.analysis.complexity.complex + '%' }"></div>
+                  <span class="bar-value">{{ library.analysis.complexity.complex }}%</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="keywords-section mt-md">
-          <h4>核心关键词</h4>
-          <div class="keywords">
-            <span
-              v-for="kw in library.analysis.keywords.slice(0, 20)"
-              :key="kw.word"
-              class="keyword-tag"
-            >
-              {{ kw.word }} ({{ kw.count }})
-            </span>
+        <!-- 2. 叙述视角 -->
+        <div v-if="library.analysis.perspective" class="analysis-category mt-md">
+          <h3>2️⃣ 叙述视角</h3>
+          <div class="perspective-section">
+            <div class="perspective-main">
+              {{ getPerspectiveLabel(library.analysis.perspective.dominant) }}
+            </div>
+            <div class="perspective-distribution">
+              <div class="person-item">
+                <span class="person-label">第一人称（我）</span>
+                <span class="person-value">{{ library.analysis.perspective.firstPerson }}%</span>
+              </div>
+              <div class="person-item">
+                <span class="person-label">第二人称（你）</span>
+                <span class="person-value">{{ library.analysis.perspective.secondPerson }}%</span>
+              </div>
+              <div class="person-item">
+                <span class="person-label">第三人称（他）</span>
+                <span class="person-value">{{ library.analysis.perspective.thirdPerson }}%</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="phrases-section mt-md">
-          <h4>常用短语</h4>
-          <div class="phrases">
-            <span
-              v-for="phrase in library.analysis.commonPhrases"
-              :key="phrase.phrase"
-              class="phrase-tag"
-            >
-              {{ phrase.phrase }}
-            </span>
+        <!-- 3. 行文习惯 -->
+        <div v-if="library.analysis.openingPatterns || library.analysis.transitions" class="analysis-category mt-md">
+          <h3>3️⃣ 行文习惯</h3>
+
+          <!-- 开头方式 -->
+          <div v-if="library.analysis.openingPatterns" class="opening-section">
+            <div class="label">开头方式</div>
+            <div class="opening-stats">
+              <div class="opening-item">
+                <span class="opening-type">问句开头</span>
+                <span class="opening-count">{{ library.analysis.openingPatterns.patterns.question }} 次</span>
+              </div>
+              <div class="opening-item">
+                <span class="opening-type">故事开头</span>
+                <span class="opening-count">{{ library.analysis.openingPatterns.patterns.story }} 次</span>
+              </div>
+              <div class="opening-item">
+                <span class="opening-type">观点开头</span>
+                <span class="opening-count">{{ library.analysis.openingPatterns.patterns.statement }} 次</span>
+              </div>
+            </div>
+            <!-- 示例 -->
+            <div v-if="library.analysis.openingPatterns.examples.question.length > 0 ||
+                       library.analysis.openingPatterns.examples.story.length > 0 ||
+                       library.analysis.openingPatterns.examples.statement.length > 0"
+                 class="opening-examples mt-sm">
+              <div class="example-label">开头示例：</div>
+              <div v-if="library.analysis.openingPatterns.examples.question[0]" class="example-text">
+                "{{ library.analysis.openingPatterns.examples.question[0] }}..."
+              </div>
+              <div v-else-if="library.analysis.openingPatterns.examples.story[0]" class="example-text">
+                "{{ library.analysis.openingPatterns.examples.story[0] }}..."
+              </div>
+              <div v-else-if="library.analysis.openingPatterns.examples.statement[0]" class="example-text">
+                "{{ library.analysis.openingPatterns.examples.statement[0] }}..."
+              </div>
+            </div>
+          </div>
+
+          <!-- 常用转折词 -->
+          <div v-if="library.analysis.transitions && library.analysis.transitions.length > 0" class="transitions-section mt-sm">
+            <div class="label">常用转折词</div>
+            <div class="transitions">
+              <span v-for="[word, count] in library.analysis.transitions.slice(0, 5)"
+                    :key="word"
+                    class="transition-tag">
+                {{ word }} <span class="count">({{ count }})</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- 主题关键词 -->
+          <div class="keywords-section mt-sm">
+            <div class="label">主题关键词</div>
+            <div class="keywords">
+              <span v-for="kw in library.analysis.keywords.slice(0, 10)"
+                    :key="kw.word"
+                    class="keyword-tag">
+                {{ kw.word }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. 表达特征 -->
+        <div class="analysis-category mt-md">
+          <h3>4️⃣ 表达特征</h3>
+          <div class="phrases-section">
+            <div class="label">常用表达方式</div>
+            <div class="phrases">
+              <span v-for="phrase in library.analysis.commonPhrases.slice(0, 12)"
+                    :key="phrase.phrase"
+                    class="phrase-tag">
+                "{{ phrase.phrase }}"
+              </span>
+            </div>
           </div>
         </div>
 
@@ -459,6 +566,31 @@ const getToneLabel = (tone) => {
   }
   return map[tone] || tone
 }
+
+const getSentenceLengthHint = (length) => {
+  if (length < 15) return '偏短，节奏明快'
+  if (length < 25) return '适中，平衡流畅'
+  return '偏长，表达细腻'
+}
+
+const getComplexityLabel = (diversity) => {
+  const map = {
+    simple: '偏爱短句，简洁直接',
+    varied: '句式富有变化，长短结合',
+    complex: '善用复杂句式，表达层次丰富'
+  }
+  return map[diversity] || diversity
+}
+
+const getPerspectiveLabel = (dominant) => {
+  const map = {
+    first: '第一人称为主（我/我们），强调个人体验和主观感受',
+    second: '第二人称为主（你/您），直接与读者对话',
+    third: '第三人称为主，客观叙述'
+  }
+  return map[dominant] || dominant
+}
+
 </script>
 
 <style scoped>
@@ -654,6 +786,223 @@ const getToneLabel = (tone) => {
   font-size: 14px;
 }
 
+/* 新增：深度分析样式 */
+.data-badge {
+  font-size: 12px;
+  color: var(--color-gray-dark);
+  background-color: var(--color-gray-light);
+  padding: 4px 12px;
+  border: 1px solid var(--color-gray);
+}
+
+.analysis-category {
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-lg);
+  border-bottom: 2px solid var(--color-gray);
+}
+
+.analysis-category:last-child {
+  border-bottom: none;
+}
+
+.analysis-category h3 {
+  margin-bottom: var(--spacing-md);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.label {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--color-gray-dark);
+  font-weight: 700;
+  margin-bottom: var(--spacing-xs);
+}
+
+.style-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.style-card {
+  padding: var(--spacing-md);
+  background-color: var(--color-gray-light);
+  border: 2px solid var(--color-black);
+}
+
+.value-large {
+  font-size: 24px;
+  font-weight: 700;
+  margin: var(--spacing-xs) 0;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--color-gray-dark);
+  font-style: italic;
+}
+
+.complexity-section {
+  padding: var(--spacing-md);
+  background-color: var(--color-gray-light);
+  border: 1px solid var(--color-gray);
+}
+
+.complexity-bars {
+  display: grid;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.complexity-bar {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.bar-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.bar-container {
+  position: relative;
+  height: 24px;
+  background-color: var(--color-white);
+  border: 2px solid var(--color-black);
+}
+
+.bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: var(--color-blue);
+  transition: width 0.5s ease;
+}
+
+.bar-value {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.perspective-section {
+  padding: var(--spacing-md);
+  background-color: var(--color-gray-light);
+  border: 1px solid var(--color-gray);
+}
+
+.perspective-main {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-gray);
+}
+
+.perspective-distribution {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.person-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.person-label {
+  color: var(--color-gray-dark);
+}
+
+.person-value {
+  font-weight: 700;
+}
+
+.opening-section,
+.transitions-section {
+  padding: var(--spacing-md);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-gray);
+}
+
+.opening-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-sm);
+}
+
+.opening-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  background-color: var(--color-gray-light);
+  border: 1px solid var(--color-gray);
+  text-align: center;
+}
+
+.opening-type {
+  font-size: 12px;
+  color: var(--color-gray-dark);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.opening-count {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.opening-examples {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background-color: var(--color-gray-light);
+  border-left: 4px solid var(--color-blue);
+}
+
+.example-label {
+  font-size: 12px;
+  color: var(--color-gray-dark);
+  margin-bottom: var(--spacing-xs);
+  font-weight: 700;
+}
+
+.example-text {
+  font-size: 14px;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.transitions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+}
+
+.transition-tag {
+  padding: 6px 12px;
+  background-color: var(--color-white);
+  border: 2px solid var(--color-black);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.transition-tag .count {
+  font-size: 12px;
+  color: var(--color-gray-dark);
+  font-weight: 400;
+}
+
 @media (max-width: 768px) {
   .analysis-grid {
     grid-template-columns: 1fr;
@@ -662,6 +1011,14 @@ const getToneLabel = (tone) => {
   .source-header {
     flex-direction: column;
     gap: var(--spacing-sm);
+  }
+
+  .style-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .opening-stats {
+    grid-template-columns: 1fr;
   }
 }
 </style>
