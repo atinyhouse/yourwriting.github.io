@@ -307,15 +307,18 @@ export const extractArticleLinks = async (url) => {
         href.includes('/article/') ||
         href.includes('/blog/') ||
         href.includes('/p/') ||
-        href.match(/\/\d{4}\//) || // 包含年份的路径
+        href.match(/\/\d{4}\//) || // 包含年份的路径 (如 /2022/article)
+        href.match(/\/\d{4}-\d{2}-\d{2}\//) || // 包含完整日期的路径 (如 /2025-07-01/article)
         href.match(/\.html?$/) // HTML文件
       ) {
-        // 排除标签、分类、归档等页面
+        // 排除标签、分类、归档、thoughts等页面
         if (
           !href.includes('/tags/') &&
           !href.includes('/categories/') &&
           !href.includes('/archive') &&
-          !href.includes('/page/')
+          !href.includes('/page/') &&
+          !href.includes('/thoughts') &&
+          !href.includes('/about')
         ) {
           articleLinks.add(href)
         }
