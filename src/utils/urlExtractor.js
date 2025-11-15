@@ -264,6 +264,69 @@ export const extractBizFromUrl = (url) => {
   return match ? match[1] : null
 }
 
+// 通过RSSHub获取公众号所有文章链接
+export const fetchWechatAccountArticles = async (articleUrl) => {
+  try {
+    // 1. 从单篇文章URL中提取biz参数
+    const biz = extractBizFromUrl(articleUrl)
+    if (!biz) {
+      throw new Error('无法从链接中提取公众号ID（__biz参数）')
+    }
+
+    console.log('提取到公众号ID:', biz)
+
+    // 2. 使用RSSHub API获取公众号文章列表
+    // RSSHub提供了微信公众号订阅：https://docs.rsshub.app/routes/social-media#wei-xin
+    const rsshubUrl = `https://rsshub.app/wechat/mp/msgalbum/${biz}`
+
+    console.log('请求RSSHub:', rsshubUrl)
+
+    const response = await fetch(rsshubUrl, {
+      headers: {
+        'Accept': 'application/xml, application/rss+xml, text/xml'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`RSSHub请求失败: HTTP ${response.status}`)
+    }
+
+    const xmlText = await response.text()
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(xmlText, 'text/xml')
+
+    // 3. 解析RSS中的文章链接
+    const items = doc.querySelectorAll('item')
+    const articles = []
+
+    items.forEach(item => {
+      const link = item.querySelector('link')?.textContent
+      const title = item.querySelector('title')?.textContent
+      const pubDate = item.querySelector('pubDate')?.textContent
+
+      if (link && link.includes('mp.weixin.qq.com')) {
+        articles.push({
+          url: link.trim(),
+          title: title?.trim() || '未命名',
+          pubDate: pubDate ? new Date(pubDate) : null
+        })
+      }
+    })
+
+    console.log(`从RSSHub获取到 ${articles.length} 篇文章`)
+
+    if (articles.length === 0) {
+      throw new Error('该公众号暂无文章，或RSSHub暂时无法获取。\\n\\n💡 建议：手动复制多个文章链接，使用"批量爬取"功能')
+    }
+
+    return articles
+
+  } catch (error) {
+    console.error('获取公众号文章列表失败:', error)
+    throw new Error(`获取公众号文章失败: ${error.message}`)
+  }
+}
+
 // 从页面中提取所有文章链接
 export const extractArticleLinks = async (url) => {
   try {
