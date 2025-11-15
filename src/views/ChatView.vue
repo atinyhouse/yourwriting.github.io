@@ -292,7 +292,11 @@ const clearCurrentChat = async () => {
   if (!confirm('Clear all messages in this conversation?')) return
 
   currentConversation.value.messages = []
-  await updateConversation(currentConversationId.value, { messages: [], title: 'New Chat' })
+  // 转换为纯对象避免 IndexedDB 克隆错误
+  await updateConversation(currentConversationId.value, {
+    messages: [],
+    title: 'New Chat'
+  })
   conversations.value = await getConversations()
   filteredConversations.value = conversations.value
 }
@@ -371,8 +375,10 @@ const handleSend = async () => {
       }
     )
 
+    // 将响应式对象转换为纯对象，避免 IndexedDB 克隆错误
+    const plainMessages = JSON.parse(JSON.stringify(currentConversation.value.messages))
     await updateConversation(currentConversationId.value, {
-      messages: currentConversation.value.messages
+      messages: plainMessages
     })
 
     conversations.value = await getConversations()
@@ -503,8 +509,8 @@ const scrollToBottom = () => {
 .chat-view {
   display: flex;
   height: calc(100vh - 80px);
-  background: #000;
-  color: #fff;
+  background: #fafafa;
+  color: #000;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   overflow: hidden;
 }
@@ -512,8 +518,8 @@ const scrollToBottom = () => {
 /* ========== SIDEBAR ========== */
 .sidebar {
   width: 280px;
-  background: #0a0a0a;
-  border-right: 1px solid #222;
+  background: #fff;
+  border-right: 2px solid #000;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -525,7 +531,7 @@ const scrollToBottom = () => {
   align-items: center;
   justify-content: space-between;
   padding: 20px;
-  border-bottom: 1px solid #222;
+  border-bottom: 2px solid #000;
 }
 
 .sidebar-header h2 {
@@ -533,7 +539,7 @@ const scrollToBottom = () => {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.5px;
-  color: #666;
+  color: #000;
 }
 
 .icon-btn {
@@ -546,12 +552,11 @@ const scrollToBottom = () => {
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  border-radius: 4px;
 }
 
 .icon-btn:hover:not(:disabled) {
-  color: #fff;
-  background: #1a1a1a;
+  color: #000;
+  background: #f0f0f0;
 }
 
 .icon-btn:disabled {
@@ -566,8 +571,8 @@ const scrollToBottom = () => {
 .new-chat-btn {
   margin: 16px 16px 8px;
   padding: 12px 16px;
-  background: #fff;
-  color: #000;
+  background: #000;
+  color: #fff;
   border: none;
   font-size: 12px;
   font-weight: 700;
@@ -578,11 +583,10 @@ const scrollToBottom = () => {
   gap: 8px;
   justify-content: center;
   transition: all 0.2s;
-  border-radius: 2px;
 }
 
 .new-chat-btn:hover {
-  background: #00ff00;
+  background: #0066ff;
   transform: translateY(-1px);
 }
 
@@ -597,22 +601,21 @@ const scrollToBottom = () => {
 .search-input {
   width: 100%;
   padding: 10px 12px;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  color: #fff;
+  background: #fafafa;
+  border: 2px solid #e0e0e0;
+  color: #000;
   font-size: 13px;
   outline: none;
   transition: all 0.2s;
-  border-radius: 2px;
 }
 
 .search-input::placeholder {
-  color: #666;
+  color: #999;
 }
 
 .search-input:focus {
-  border-color: #fff;
-  background: #000;
+  border-color: #000;
+  background: #fff;
 }
 
 .conversations-list {
@@ -630,12 +633,11 @@ const scrollToBottom = () => {
 }
 
 .conversations-list::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 3px;
+  background: #ddd;
 }
 
 .conversations-list::-webkit-scrollbar-thumb:hover {
-  background: #444;
+  background: #bbb;
 }
 
 .conversation-item {
@@ -646,18 +648,18 @@ const scrollToBottom = () => {
   margin-bottom: 2px;
   cursor: pointer;
   transition: all 0.15s;
-  border-left: 2px solid transparent;
+  border-left: 3px solid transparent;
   background: transparent;
 }
 
 .conversation-item:hover {
-  background: #1a1a1a;
-  border-left-color: #444;
+  background: #f5f5f5;
+  border-left-color: #999;
 }
 
 .conversation-item.is-active {
-  background: #1a1a1a;
-  border-left-color: #00ff00;
+  background: #f0f0f0;
+  border-left-color: #0066ff;
 }
 
 .conv-content {
@@ -668,7 +670,7 @@ const scrollToBottom = () => {
 .conv-title {
   font-size: 13px;
   font-weight: 500;
-  color: #fff;
+  color: #000;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -677,7 +679,7 @@ const scrollToBottom = () => {
 
 .conv-meta {
   font-size: 11px;
-  color: #666;
+  color: #999;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -693,30 +695,30 @@ const scrollToBottom = () => {
 
 .delete-btn:hover {
   color: #ff3333;
-  background: #1a1a1a;
+  background: #fee;
 }
 
 .empty-state {
   text-align: center;
   padding: 40px 20px;
-  color: #666;
+  color: #999;
   font-size: 13px;
 }
 
 .sidebar-footer {
   display: flex;
-  gap: 1px;
+  gap: 8px;
   padding: 16px;
-  border-top: 1px solid #222;
-  background: #0a0a0a;
+  border-top: 2px solid #000;
+  background: #fff;
 }
 
 .footer-btn {
   flex: 1;
   padding: 10px;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  color: #999;
+  background: #fff;
+  border: 2px solid #000;
+  color: #000;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -730,9 +732,8 @@ const scrollToBottom = () => {
 }
 
 .footer-btn:hover {
-  background: #222;
+  background: #000;
   color: #fff;
-  border-color: #444;
 }
 
 /* ========== MAIN CONTENT ========== */
@@ -740,7 +741,7 @@ const scrollToBottom = () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #000;
+  background: #fafafa;
   overflow: hidden;
 }
 
@@ -749,8 +750,8 @@ const scrollToBottom = () => {
   align-items: center;
   gap: 16px;
   padding: 20px 24px;
-  border-bottom: 1px solid #222;
-  background: #000;
+  border-bottom: 2px solid #000;
+  background: #fff;
   flex-shrink: 0;
 }
 
@@ -763,7 +764,7 @@ const scrollToBottom = () => {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #fff;
+  color: #000;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -785,12 +786,11 @@ const scrollToBottom = () => {
 }
 
 .messages-container::-webkit-scrollbar-thumb {
-  background: #222;
-  border-radius: 4px;
+  background: #ddd;
 }
 
 .messages-container::-webkit-scrollbar-thumb:hover {
-  background: #333;
+  background: #bbb;
 }
 
 .welcome {
@@ -801,45 +801,44 @@ const scrollToBottom = () => {
 
 .welcome-icon {
   margin-bottom: 24px;
-  color: #333;
+  color: #ddd;
 }
 
 .welcome h2 {
   margin: 0 0 12px;
   font-size: 28px;
   font-weight: 700;
-  color: #fff;
+  color: #000;
 }
 
 .welcome p {
   margin: 0 0 32px;
   font-size: 15px;
-  color: #999;
+  color: #666;
 }
 
 .warning-box {
   padding: 20px;
-  background: #1a1a00;
-  border: 1px solid #ffff00;
-  border-radius: 2px;
+  background: #fffbea;
+  border: 2px solid #ffcc00;
   margin-top: 32px;
 }
 
 .warning-box p {
   margin: 0 0 8px;
-  color: #ffff00;
+  color: #996600;
   font-size: 14px;
 }
 
 .link {
-  color: #00ff00;
+  color: #0066ff;
   text-decoration: none;
   font-weight: 600;
   transition: color 0.2s;
 }
 
 .link:hover {
-  color: #00ff00;
+  color: #0044cc;
   text-decoration: underline;
 }
 
@@ -864,7 +863,7 @@ const scrollToBottom = () => {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  border-radius: 2px;
+  border: 2px solid #000;
 }
 
 .message--user .message-avatar {
@@ -873,8 +872,8 @@ const scrollToBottom = () => {
 }
 
 .message--assistant .message-avatar {
-  background: #00ff00;
-  color: #000;
+  background: #0066ff;
+  color: #fff;
 }
 
 .message--system .message-avatar {
@@ -898,19 +897,19 @@ const scrollToBottom = () => {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1px;
-  color: #666;
+  color: #999;
 }
 
 .message-time {
   font-size: 10px;
-  color: #444;
+  color: #ccc;
   letter-spacing: 0.5px;
 }
 
 .message-text {
   font-size: 15px;
   line-height: 1.6;
-  color: #fff;
+  color: #000;
 }
 
 .message-text :deep(p) {
@@ -922,26 +921,27 @@ const scrollToBottom = () => {
 }
 
 .message-text :deep(code) {
-  background: #1a1a1a;
+  background: #f5f5f5;
   padding: 2px 6px;
-  border-radius: 2px;
   font-family: 'Monaco', 'Courier New', monospace;
   font-size: 13px;
-  color: #00ff00;
+  color: #d63384;
+  border: 1px solid #e0e0e0;
 }
 
 .message-text :deep(pre) {
-  background: #1a1a1a;
+  background: #f8f8f8;
   padding: 16px;
-  border-radius: 2px;
   overflow-x: auto;
-  border-left: 2px solid #00ff00;
+  border-left: 3px solid #0066ff;
+  border: 1px solid #e0e0e0;
 }
 
 .message-text :deep(pre code) {
   background: none;
   padding: 0;
-  color: #fff;
+  color: #000;
+  border: none;
 }
 
 .typing-dots {
@@ -953,7 +953,7 @@ const scrollToBottom = () => {
 .typing-dots span {
   width: 8px;
   height: 8px;
-  background: #666;
+  background: #999;
   border-radius: 50%;
   animation: typing-bounce 1.4s infinite ease-in-out;
 }
@@ -984,8 +984,8 @@ const scrollToBottom = () => {
 /* ========== INPUT SECTION ========== */
 .input-section {
   padding: 20px 24px;
-  border-top: 1px solid #222;
-  background: #000;
+  border-top: 2px solid #000;
+  background: #fff;
   flex-shrink: 0;
 }
 
@@ -1000,9 +1000,9 @@ const scrollToBottom = () => {
 .input-field {
   flex: 1;
   padding: 14px 16px;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  color: #fff;
+  background: #fafafa;
+  border: 2px solid #e0e0e0;
+  color: #000;
   font-size: 15px;
   line-height: 1.5;
   resize: none;
@@ -1011,16 +1011,15 @@ const scrollToBottom = () => {
   font-family: inherit;
   min-height: 52px;
   max-height: 200px;
-  border-radius: 2px;
 }
 
 .input-field::placeholder {
-  color: #666;
+  color: #999;
 }
 
 .input-field:focus {
-  border-color: #fff;
-  background: #000;
+  border-color: #000;
+  background: #fff;
 }
 
 .input-field:disabled {
@@ -1031,20 +1030,19 @@ const scrollToBottom = () => {
 .send-btn {
   width: 52px;
   height: 52px;
-  background: #fff;
+  background: #000;
   border: none;
-  color: #000;
+  color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
   flex-shrink: 0;
-  border-radius: 2px;
 }
 
 .send-btn:hover:not(:disabled) {
-  background: #00ff00;
+  background: #0066ff;
   transform: translateY(-2px);
 }
 
@@ -1071,7 +1069,7 @@ const scrollToBottom = () => {
 
   .sidebar.is-open {
     transform: translateX(0);
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
   }
 
   .close-btn {
