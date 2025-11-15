@@ -240,7 +240,17 @@ const handleUrlImport = async () => {
 
   try {
     const url = urlInput.value.trim()
+
+    // 验证 URL 格式
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      alert('请输入完整的链接（以 http:// 或 https:// 开头）')
+      isLoadingUrl.value = false
+      return
+    }
+
     const urlType = detectUrlType(url)
+
+    console.log('开始导入:', { url, urlType })
 
     let article
 
@@ -252,11 +262,13 @@ const handleUrlImport = async () => {
       article = await extractWebContent(url)
     }
 
+    console.log('提取成功:', article)
+
     // 清洗内容
     const cleanedContent = cleanContent(article.content)
 
     if (!cleanedContent || cleanedContent.length < 50) {
-      alert('提取的内容太少或清洗后为空，请检查链接是否正确')
+      alert('提取的内容太少或清洗后为空，请检查链接是否正确\n\n提取到的内容长度: ' + (cleanedContent?.length || 0) + ' 字')
       return
     }
 
@@ -272,10 +284,22 @@ const handleUrlImport = async () => {
     await reanalyze()
 
     urlInput.value = ''
-    alert('导入成功！')
+    alert(`✅ 导入成功！\n\n标题: ${article.title}\n内容: ${cleanedContent.length} 字`)
   } catch (error) {
-    console.error('导入失败:', error)
-    alert(`导入失败: ${error.message}\n\n如果是微信公众号文章，请确保：\n1. 链接完整且有效\n2. 文章未被删除或设置为仅粉丝可见`)
+    console.error('导入失败详情:', error)
+
+    // 显示详细错误信息
+    let errorMsg = `导入失败: ${error.message}`
+
+    // 如果是网络错误，提供额外帮助
+    if (error.message.includes('Failed to fetch') || error.message.includes('网络')) {
+      errorMsg += '\n\n💡 解决方案：\n'
+      errorMsg += '1. 检查网络连接是否正常\n'
+      errorMsg += '2. 尝试使用"直接粘贴内容"功能\n'
+      errorMsg += '3. 打开浏览器控制台查看详细日志'
+    }
+
+    alert(errorMsg)
   } finally {
     isLoadingUrl.value = false
   }
