@@ -85,13 +85,13 @@ export const chatWithDeepSeek = async (messages, apiKey, params) => {
   return data.choices[0].message.content
 }
 
-// 构建带文风的 prompt
-export const buildStyledPrompt = (userMessage, styleDescription, enableStyleTransfer) => {
-  const messages = []
+// 构建带文风的 prompt（支持多轮对话）
+export const buildStyledPrompt = (messages, styleDescription, enableStyleTransfer) => {
+  const apiMessages = []
 
+  // 系统提示词
   if (enableStyleTransfer && styleDescription) {
-    // 系统提示词：包含文风要求
-    messages.push({
+    apiMessages.push({
       role: 'system',
       content: `你是一个专业的写作助手，擅长模仿特定的写作风格。用户已经提供了他们的写作风格样本，你需要深入理解并模仿这种风格。
 
@@ -127,8 +127,7 @@ ${styleDescription}
 记住：你的目标不是"写得好"，而是"写得像用户"。`
     })
   } else {
-    // 默认系统提示词
-    messages.push({
+    apiMessages.push({
       role: 'system',
       content: `你是一个专业的写作助手，帮助用户创作和编辑文章。
 
@@ -141,12 +140,11 @@ ${styleDescription}
     })
   }
 
-  messages.push({
-    role: 'user',
-    content: userMessage
-  })
+  // 添加历史对话消息（最多保留最近10轮对话）
+  const recentMessages = messages.slice(-20) // 最多20条消息（10轮对话）
+  apiMessages.push(...recentMessages)
 
-  return messages
+  return apiMessages
 }
 
 // 验证 API Key 格式
