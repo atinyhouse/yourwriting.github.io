@@ -11,13 +11,17 @@
 - 💾 **本地存储** - 所有数据保存在本地浏览器，隐私安全
 - 🚀 **GitHub Pages** - 零成本部署和托管
 
+## 在线体验
+
+访问 [https://atinyhouse.github.io/yourwriting.github.io/](https://atinyhouse.github.io/yourwriting.github.io/) 直接使用
+
 ## 快速开始
 
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/your-username/writing-style-ai.git
-cd writing-style-ai
+git clone https://github.com/atinyhouse/yourwriting.github.io.git
+cd yourwriting.github.io
 ```
 
 ### 2. 安装依赖
