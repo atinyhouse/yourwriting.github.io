@@ -1,4 +1,5 @@
 // URL 内容提取工具
+import { Readability } from '@mozilla/readability'
 
 // 多个 CORS 代理服务（按优先级排序）
 const CORS_PROXIES = [
@@ -66,7 +67,7 @@ const fetchWithCORS = async (url) => {
   throw new Error(`所有代理服务都无法访问该链接。\n原因：${lastError?.message || '网络错误'}\n\n建议：\n1. 检查网络连接\n2. 使用"直接粘贴内容"功能\n3. 稍后重试`)
 }
 
-// 提取微信公众号文章内容
+// 提取微信公众号文章内容（使用 Mozilla Readability 算法）
 export const extractWechatArticle = async (url) => {
   try {
     console.log('开始提取微信文章:', url)
@@ -80,59 +81,46 @@ export const extractWechatArticle = async (url) => {
 
     console.log('成功获取 HTML，长度:', html.length)
 
-    // 解析 HTML
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(html, 'text/html')
+    // 使用 Readability 提取主要内容
+    const doc = new DOMParser().parseFromString(html, 'text/html')
 
-    // 提取标题（多种方式尝试）
-    const title = doc.querySelector('#activity-name')?.textContent?.trim() ||
-                  doc.querySelector('.rich_media_title')?.textContent?.trim() ||
-                  doc.querySelector('h1')?.textContent?.trim() ||
-                  doc.querySelector('title')?.textContent?.trim() ||
-                  '未命名文章'
+    // 使用 Mozilla Readability 算法
+    const reader = new Readability(doc, {
+      keepClasses: false,
+      charThreshold: 500 // 至少500字符才算是文章
+    })
 
-    console.log('提取到标题:', title)
+    const article = reader.parse()
 
-    // 提取正文内容（多种选择器）
-    const contentSelectors = [
-      '#js_content',
-      '.rich_media_content',
-      '#img-content',
-      '.rich_media_area_primary'
-    ]
-
-    let contentDiv = null
-    for (const selector of contentSelectors) {
-      contentDiv = doc.querySelector(selector)
-      if (contentDiv) {
-        console.log('找到内容区域:', selector)
-        break
-      }
+    if (!article) {
+      console.error('Readability 无法解析文章')
+      // 如果 Readability 失败，尝试手动提取
+      return await fallbackExtraction(doc, url)
     }
 
-    if (!contentDiv) {
-      console.error('未找到内容区域，HTML 预览:', html.substring(0, 500))
-      throw new Error('无法提取文章内容。可能原因：\n1. 文章需要关注公众号后才能查看\n2. 文章已被删除\n3. 链接格式不正确\n\n建议：打开链接手动复制内容后使用"直接粘贴"功能')
-    }
+    console.log('Readability 提取成功:')
+    console.log('- 标题:', article.title)
+    console.log('- 长度:', article.textContent.length, '字符')
+    console.log('- 摘要:', article.excerpt)
+
+    // 将 HTML 内容转换为纯文本
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = article.content
 
     // 移除脚本和样式
-    contentDiv.querySelectorAll('script, style, iframe').forEach(el => el.remove())
+    tempDiv.querySelectorAll('script, style, iframe').forEach(el => el.remove())
 
-    // 获取纯文本
-    let content = contentDiv.textContent || contentDiv.innerText || ''
+    const content = tempDiv.textContent || tempDiv.innerText || ''
+    const cleanedContent = content.replace(/\s+/g, ' ').trim()
 
-    // 清理空白字符
-    content = content.replace(/\s+/g, ' ').trim()
-
-    console.log('提取到内容，长度:', content.length)
-
-    if (!content || content.length < 50) {
-      throw new Error('提取到的正文内容太少，请检查链接是否正确')
+    if (!cleanedContent || cleanedContent.length < 100) {
+      throw new Error('提取到的正文内容太少（' + cleanedContent.length + ' 字），请检查链接是否正确')
     }
 
     return {
-      title,
-      content,
+      title: article.title || '未命名文章',
+      content: cleanedContent,
+      excerpt: article.excerpt,
       source: 'wechat',
       url
     }
@@ -142,64 +130,127 @@ export const extractWechatArticle = async (url) => {
   }
 }
 
-// 通用网页内容提取
+// 备用提取方法（当 Readability 失败时）
+const fallbackExtraction = async (doc, url) => {
+  console.log('使用备用提取方法...')
+
+  const pageTitle = doc.querySelector('title')?.textContent || ''
+
+  // 提取标题
+  let title = doc.querySelector('#activity-name')?.textContent?.trim() ||
+              doc.querySelector('.rich_media_title')?.textContent?.trim() ||
+              doc.querySelector('h1.rich_media_title')?.textContent?.trim() ||
+              doc.querySelector('h2#activity-name')?.textContent?.trim() ||
+              doc.querySelector('h1')?.textContent?.trim() ||
+              pageTitle
+
+  title = title?.replace(/\s+/g, ' ').trim() || '未命名文章'
+
+  // 尝试找到内容区域
+  const contentSelectors = [
+    '#js_content',
+    '.rich_media_content',
+    '#img-content',
+    '.rich_media_area_primary',
+    'div[id="js_content"]',
+    'div.rich_media_content'
+  ]
+
+  let contentDiv = null
+  for (const selector of contentSelectors) {
+    contentDiv = doc.querySelector(selector)
+    if (contentDiv) {
+      console.log('备用方法找到内容区域:', selector)
+      break
+    }
+  }
+
+  // 如果还是找不到，找文本最长的 div
+  if (!contentDiv) {
+    const allDivs = doc.querySelectorAll('div')
+    let maxLength = 0
+
+    allDivs.forEach(div => {
+      const text = div.textContent || ''
+      if (text.length > maxLength && text.length > 500) {
+        maxLength = text.length
+        contentDiv = div
+      }
+    })
+  }
+
+  if (!contentDiv) {
+    throw new Error('无法提取文章内容。\n\n💡 可能原因：\n1. 文章需要关注公众号才能查看\n2. 文章已被删除\n3. CORS代理无法访问该页面\n\n建议：使用"直接粘贴内容"功能')
+  }
+
+  // 移除脚本和样式
+  contentDiv.querySelectorAll('script, style, iframe').forEach(el => el.remove())
+
+  const content = contentDiv.textContent || contentDiv.innerText || ''
+  const cleanedContent = content.replace(/\s+/g, ' ').trim()
+
+  return {
+    title,
+    content: cleanedContent,
+    source: 'wechat',
+    url
+  }
+}
+
+// 通用网页内容提取（使用 Mozilla Readability）
 export const extractWebContent = async (url) => {
   try {
+    console.log('开始提取网页内容:', url)
+
     // 使用 CORS 代理获取 HTML
     const html = await fetchWithCORS(url)
 
-    // 解析 HTML
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(html, 'text/html')
-
-    // 提取标题
-    const title = doc.querySelector('h1')?.textContent?.trim() ||
-                  doc.querySelector('title')?.textContent?.trim() ||
-                  '未命名文章'
-
-    // 尝试找到主要内容区域
-    const contentSelectors = [
-      'article',
-      '.article-content',
-      '.post-content',
-      '.entry-content',
-      'main',
-      '#content'
-    ]
-
-    let contentElement = null
-    for (const selector of contentSelectors) {
-      contentElement = doc.querySelector(selector)
-      if (contentElement) break
+    if (!html || html.length < 100) {
+      throw new Error('获取到的内容为空或过短')
     }
 
-    // 如果找不到特定区域，使用 body
-    if (!contentElement) {
-      contentElement = doc.querySelector('body')
+    console.log('成功获取 HTML，长度:', html.length)
+
+    // 使用 Readability 提取主要内容
+    const doc = new DOMParser().parseFromString(html, 'text/html')
+
+    const reader = new Readability(doc, {
+      keepClasses: false,
+      charThreshold: 200
+    })
+
+    const article = reader.parse()
+
+    if (!article) {
+      throw new Error('无法自动提取网页内容，请使用"直接粘贴"功能')
     }
 
-    if (!contentElement) {
-      throw new Error('无法提取文章内容')
+    console.log('Readability 提取成功:')
+    console.log('- 标题:', article.title)
+    console.log('- 长度:', article.textContent.length, '字符')
+
+    // 将 HTML 内容转换为纯文本
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = article.content
+    tempDiv.querySelectorAll('script, style, iframe, nav, header, footer, aside').forEach(el => el.remove())
+
+    const content = tempDiv.textContent || tempDiv.innerText || ''
+    const cleanedContent = content.replace(/\s+/g, ' ').trim()
+
+    if (!cleanedContent || cleanedContent.length < 50) {
+      throw new Error('提取到的内容太少')
     }
-
-    // 移除脚本、样式、导航等
-    contentElement.querySelectorAll('script, style, nav, header, footer, aside, .ad, .advertisement').forEach(el => el.remove())
-
-    // 获取纯文本
-    let content = contentElement.textContent || contentElement.innerText || ''
-
-    // 清理空白字符
-    content = content.replace(/\s+/g, ' ').trim()
 
     return {
-      title,
-      content,
+      title: article.title || '未命名文章',
+      content: cleanedContent,
+      excerpt: article.excerpt,
       source: 'web',
       url
     }
   } catch (error) {
     console.error('提取网页内容失败:', error)
-    throw new Error(`提取失败: ${error.message}`)
+    throw error
   }
 }
 
