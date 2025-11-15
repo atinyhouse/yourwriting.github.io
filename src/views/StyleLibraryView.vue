@@ -26,16 +26,33 @@
         <!-- URL 导入 -->
         <div class="url-input">
           <h3>从链接导入</h3>
-          <p>✨ 自动提取微信公众号文章、博客等网页内容</p>
+          <p>✨ 支持单篇文章或整个博客/网站批量导入</p>
           <input
             v-model="urlInput"
             type="url"
-            placeholder="粘贴文章链接，例如：https://mp.weixin.qq.com/s/..."
+            placeholder="粘贴链接：文章链接 或 博客首页（自动爬取所有文章）"
             class="mt-sm"
           />
-          <button @click="handleUrlImport" class="mt-sm" :disabled="!urlInput.trim() || isLoadingUrl">
-            {{ isLoadingUrl ? '正在提取...' : '自动提取并导入' }}
-          </button>
+          <div class="button-group mt-sm">
+            <button @click="handleUrlImport" :disabled="!urlInput.trim() || isLoadingUrl">
+              {{ isLoadingUrl ? '正在提取...' : '导入单篇文章' }}
+            </button>
+            <button @click="handleBatchImport" class="secondary" :disabled="!urlInput.trim() || isLoadingUrl">
+              {{ isLoadingUrl ? '批量提取中...' : '批量爬取所有文章' }}
+            </button>
+          </div>
+
+          <!-- 批量导入进度 -->
+          <div v-if="batchProgress.show" class="batch-progress mt-md">
+            <h4>批量导入进度: {{ batchProgress.current }} / {{ batchProgress.total }}</h4>
+            <div class="progress-bar">
+              <div class="progress-fill" :style="{ width: batchProgressPercent + '%' }"></div>
+            </div>
+            <p class="current-url">{{ batchProgress.currentUrl }}</p>
+            <p class="stats">
+              成功: {{ batchProgress.success }} | 失败: {{ batchProgress.failed }}
+            </p>
+          </div>
         </div>
 
         <!-- 手动输入 -->
@@ -143,7 +160,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import {
   getStyleLibrary,
   addToStyleLibrary,
@@ -152,7 +169,13 @@ import {
   saveStyleLibrary
 } from '../utils/storage'
 import { analyzeWritingStyle, cleanContent } from '../utils/styleAnalysis'
-import { detectUrlType, extractWechatArticle, extractWebContent } from '../utils/urlExtractor'
+import {
+  detectUrlType,
+  extractWechatArticle,
+  extractWebContent,
+  extractArticleLinks,
+  batchExtractArticles
+} from '../utils/urlExtractor'
 
 const library = ref({ sources: [], analysis: null, totalWords: 0 })
 const manualContent = ref('')
@@ -160,6 +183,21 @@ const manualTitle = ref('')
 const urlInput = ref('')
 const isLoadingUrl = ref(false)
 const fileInput = ref(null)
+
+// 批量导入进度
+const batchProgress = ref({
+  show: false,
+  current: 0,
+  total: 0,
+  currentUrl: '',
+  success: 0,
+  failed: 0
+})
+
+const batchProgressPercent = computed(() => {
+  if (batchProgress.value.total === 0) return 0
+  return Math.round((batchProgress.value.current / batchProgress.value.total) * 100)
+})
 
 onMounted(async () => {
   library.value = await getStyleLibrary()
@@ -305,6 +343,82 @@ const handleUrlImport = async () => {
   }
 }
 
+// 批量导入处理函数
+const handleBatchImport = async () => {
+  if (!urlInput.value.trim()) return
+
+  if (!confirm('批量爬取会从该页面提取所有文章链接并逐个提取内容，\n这可能需要较长时间。\n\n确定继续吗？')) {
+    return
+  }
+
+  isLoadingUrl.value = true
+  batchProgress.value = {
+    show: true,
+    current: 0,
+    total: 0,
+    currentUrl: '',
+    success: 0,
+    failed: 0
+  }
+
+  try {
+    const url = urlInput.value.trim()
+    console.log('开始批量导入:', url)
+
+    // 第一步：提取所有文章链接
+    const links = await extractArticleLinks(url)
+
+    if (links.length === 0) {
+      alert('未找到任何文章链接。\n\n可能原因：\n1. 这不是博客首页\n2. 链接结构不符合常见模式\n\n请尝试导入单篇文章')
+      return
+    }
+
+    const proceed = confirm(`找到 ${links.length} 篇文章。\n\n确定要全部导入吗？\n\n注意：这可能需要 ${Math.ceil(links.length / 60)} 到 ${Math.ceil(links.length / 30)} 分钟。`)
+    if (!proceed) {
+      return
+    }
+
+    batchProgress.value.total = links.length
+
+    // 第二步：批量提取文章内容
+    await batchExtractArticles(links, (progress) => {
+      batchProgress.value.current = progress.current
+      batchProgress.value.currentUrl = progress.url
+
+      if (progress.status === 'success') {
+        batchProgress.value.success++
+
+        // 立即添加到文风库
+        const cleanedContent = cleanContent(progress.article.content)
+        if (cleanedContent && cleanedContent.length >= 200) {
+          addToStyleLibrary({
+            type: 'url',
+            title: progress.article.title,
+            content: cleanedContent,
+            url: progress.url
+          })
+        }
+      } else if (progress.status === 'failed') {
+        batchProgress.value.failed++
+      }
+    })
+
+    // 刷新文风库并重新分析
+    library.value = await getStyleLibrary()
+    await reanalyze()
+
+    urlInput.value = ''
+    alert(`✅ 批量导入完成！\n\n总计: ${links.length} 篇\n成功: ${batchProgress.value.success} 篇\n失败: ${batchProgress.value.failed} 篇`)
+
+    batchProgress.value.show = false
+  } catch (error) {
+    console.error('批量导入失败:', error)
+    alert(`批量导入失败: ${error.message}`)
+  } finally {
+    isLoadingUrl.value = false
+  }
+}
+
 const removeSource = async (id) => {
   if (!confirm('确定要删除这条内容吗？')) return
 
@@ -381,6 +495,55 @@ const getToneLabel = (tone) => {
   border-bottom: none;
   padding-bottom: 0;
   margin-bottom: 0;
+}
+
+.button-group {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.button-group button {
+  flex: 1;
+}
+
+.batch-progress {
+  padding: var(--spacing-md);
+  background-color: var(--color-gray-light);
+  border: 1px solid var(--color-gray);
+}
+
+.batch-progress h4 {
+  margin-bottom: var(--spacing-sm);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 24px;
+  background-color: var(--color-white);
+  border: 2px solid var(--color-black);
+  margin-bottom: var(--spacing-sm);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--color-blue);
+  transition: width 0.3s ease;
+}
+
+.current-url {
+  font-size: 12px;
+  color: var(--color-gray-dark);
+  margin-bottom: var(--spacing-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stats {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
 }
 
 .empty-state {

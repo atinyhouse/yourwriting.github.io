@@ -275,3 +275,126 @@ export const extractBizFromUrl = (url) => {
   const match = url.match(/[?&]__biz=([^&]+)/)
   return match ? match[1] : null
 }
+
+// 从页面中提取所有文章链接
+export const extractArticleLinks = async (url) => {
+  try {
+    console.log('开始提取页面中的所有文章链接:', url)
+
+    const html = await fetchWithCORS(url)
+    const doc = new DOMParser().parseFromString(html, 'text/html')
+
+    // 查找所有链接
+    const allLinks = doc.querySelectorAll('a[href]')
+    const articleLinks = new Set()
+
+    allLinks.forEach(link => {
+      let href = link.getAttribute('href')
+      if (!href) return
+
+      // 处理相对路径
+      if (href.startsWith('/')) {
+        const baseUrl = new URL(url)
+        href = baseUrl.origin + href
+      } else if (!href.startsWith('http')) {
+        return // 跳过非http链接
+      }
+
+      // 过滤掉非文章链接
+      if (
+        href.includes('/posts/') ||
+        href.includes('/post/') ||
+        href.includes('/article/') ||
+        href.includes('/blog/') ||
+        href.includes('/p/') ||
+        href.match(/\/\d{4}\//) || // 包含年份的路径
+        href.match(/\.html?$/) // HTML文件
+      ) {
+        // 排除标签、分类、归档等页面
+        if (
+          !href.includes('/tags/') &&
+          !href.includes('/categories/') &&
+          !href.includes('/archive') &&
+          !href.includes('/page/')
+        ) {
+          articleLinks.add(href)
+        }
+      }
+    })
+
+    const links = Array.from(articleLinks)
+    console.log(`找到 ${links.length} 个可能的文章链接`)
+    return links
+  } catch (error) {
+    console.error('提取文章链接失败:', error)
+    throw error
+  }
+}
+
+// 批量提取文章内容
+export const batchExtractArticles = async (links, onProgress) => {
+  const results = []
+  const total = links.length
+
+  for (let i = 0; i < links.length; i++) {
+    try {
+      const url = links[i]
+      console.log(`[${i + 1}/${total}] 正在提取: ${url}`)
+
+      // 调用进度回调
+      if (onProgress) {
+        onProgress({
+          current: i + 1,
+          total,
+          url,
+          status: 'processing'
+        })
+      }
+
+      // 判断是微信还是普通网页
+      const article = url.includes('mp.weixin.qq.com')
+        ? await extractWechatArticle(url)
+        : await extractWebContent(url)
+
+      results.push({
+        success: true,
+        url,
+        article
+      })
+
+      // 调用进度回调
+      if (onProgress) {
+        onProgress({
+          current: i + 1,
+          total,
+          url,
+          status: 'success',
+          article
+        })
+      }
+
+      // 避免请求过快，添加延迟
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    } catch (error) {
+      console.error(`提取失败: ${links[i]}`, error)
+      results.push({
+        success: false,
+        url: links[i],
+        error: error.message
+      })
+
+      // 调用进度回调
+      if (onProgress) {
+        onProgress({
+          current: i + 1,
+          total,
+          url: links[i],
+          status: 'failed',
+          error: error.message
+        })
+      }
+    }
+  }
+
+  return results
+}
