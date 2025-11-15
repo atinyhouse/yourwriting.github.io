@@ -209,7 +209,122 @@ export const detectTone = (texts) => {
   }
 }
 
-// 主分析函数
+// 分析段落开头方式
+export const analyzeOpeningPatterns = (texts) => {
+  const patterns = {
+    question: 0,      // 问句开头
+    story: 0,         // 故事/场景开头
+    statement: 0,     // 观点/陈述开头
+    quote: 0,         // 引用开头
+    data: 0           // 数据/事实开头
+  }
+
+  const examples = {
+    question: [],
+    story: [],
+    statement: []
+  }
+
+  texts.forEach(text => {
+    const paragraphs = text.split(/\n+/).filter(p => p.trim().length > 20)
+
+    paragraphs.slice(0, 3).forEach(para => {
+      const firstSentence = para.trim().split(/[。！？.!?]/)[0]
+      if (!firstSentence) return
+
+      if (firstSentence.includes('？') || firstSentence.includes('?')) {
+        patterns.question++
+        if (examples.question.length < 3) examples.question.push(firstSentence.slice(0, 30))
+      } else if (/^(那天|有一次|记得|曾经|最近|去年|昨天|前几天)/.test(firstSentence)) {
+        patterns.story++
+        if (examples.story.length < 3) examples.story.push(firstSentence.slice(0, 30))
+      } else if (/^(我|我们|我觉得|我认为|我想|其实|说实话)/.test(firstSentence)) {
+        patterns.statement++
+        if (examples.statement.length < 3) examples.statement.push(firstSentence.slice(0, 30))
+      }
+    })
+  })
+
+  return { patterns, examples }
+}
+
+// 分析转折和连接方式
+export const analyzeTransitions = (texts) => {
+  const transitions = {
+    '但是': 0, '但': 0, '然而': 0, '不过': 0, '可是': 0,
+    '所以': 0, '因此': 0, '于是': 0,
+    '而且': 0, '并且': 0, '同时': 0,
+    '其实': 0, '事实上': 0, '实际上': 0,
+    '换句话说': 0, '也就是说': 0, '比如': 0, '例如': 0
+  }
+
+  const allText = texts.join(' ')
+  Object.keys(transitions).forEach(word => {
+    const regex = new RegExp(word, 'g')
+    const matches = allText.match(regex)
+    if (matches) transitions[word] = matches.length
+  })
+
+  // 排序找出最常用的转折词
+  const topTransitions = Object.entries(transitions)
+    .filter(([_, count]) => count > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+
+  return topTransitions
+}
+
+// 分析人称视角
+export const analyzePerspective = (texts) => {
+  const allText = texts.join(' ')
+  const firstPerson = (allText.match(/我|我们|咱们/g) || []).length
+  const secondPerson = (allText.match(/你|您|你们/g) || []).length
+  const thirdPerson = (allText.match(/他|她|它|他们|她们/g) || []).length
+
+  const total = firstPerson + secondPerson + thirdPerson
+
+  return {
+    firstPerson: ((firstPerson / total) * 100).toFixed(1),
+    secondPerson: ((secondPerson / total) * 100).toFixed(1),
+    thirdPerson: ((thirdPerson / total) * 100).toFixed(1),
+    dominant: firstPerson > secondPerson && firstPerson > thirdPerson ? 'first' :
+              secondPerson > firstPerson && secondPerson > thirdPerson ? 'second' : 'third'
+  }
+}
+
+// 分析句式复杂度和多样性
+export const analyzeSentenceComplexity = (texts) => {
+  const allText = texts.join(' ')
+  const sentences = allText.split(/[。！？.!?]/).filter(s => s.trim().length > 5)
+
+  let simpleCount = 0    // 简单句（少于15字，无逗号）
+  let compoundCount = 0  // 复合句（有逗号/分号）
+  let complexCount = 0   // 复杂句（多个从句）
+
+  sentences.forEach(sentence => {
+    const length = sentence.length
+    const commas = (sentence.match(/，|,|；|;/g) || []).length
+
+    if (length < 15 && commas === 0) {
+      simpleCount++
+    } else if (commas >= 3) {
+      complexCount++
+    } else {
+      compoundCount++
+    }
+  })
+
+  const total = sentences.length
+  return {
+    simple: ((simpleCount / total) * 100).toFixed(1),
+    compound: ((compoundCount / total) * 100).toFixed(1),
+    complex: ((complexCount / total) * 100).toFixed(1),
+    diversity: compoundCount > simpleCount && compoundCount > complexCount ? 'varied' :
+               complexCount > simpleCount ? 'complex' : 'simple'
+  }
+}
+
+// 主分析函数（增强版）
 export const analyzeWritingStyle = (sources) => {
   if (!sources || sources.length === 0) {
     return null
@@ -221,6 +336,7 @@ export const analyzeWritingStyle = (sources) => {
     return null
   }
 
+  // 基础分析（保留）
   const keywords = extractKeywords(texts)
   const commonPhrases = extractCommonPhrases(texts)
   const avgSentenceLength = calculateAvgSentenceLength(texts)
@@ -228,13 +344,27 @@ export const analyzeWritingStyle = (sources) => {
   const tone = detectTone(texts)
   const totalWords = texts.reduce((sum, text) => sum + text.length, 0)
 
+  // 深度分析（新增）
+  const openingPatterns = analyzeOpeningPatterns(texts)
+  const transitions = analyzeTransitions(texts)
+  const perspective = analyzePerspective(texts)
+  const complexity = analyzeSentenceComplexity(texts)
+
   return {
+    // 基础数据
     keywords,
     commonPhrases,
     avgSentenceLength,
     punctuationStyle,
     tone,
     totalWords,
+
+    // 深度分析
+    openingPatterns,
+    transitions,
+    perspective,
+    complexity,
+
     analyzedAt: new Date().toISOString()
   }
 }
@@ -250,6 +380,18 @@ export const generateStyleDescription = (analysis) => {
     formal: '正式严谨',
     humorous: '幽默风趣',
     neutral: '中性客观'
+  }
+
+  const perspectiveMap = {
+    first: '第一人称为主（我/我们），强调个人体验和主观感受',
+    second: '第二人称为主（你/您），直接与读者对话',
+    third: '第三人称为主，客观叙述'
+  }
+
+  const complexityMap = {
+    simple: '偏爱短句，简洁直接',
+    varied: '句式富有变化，长短结合',
+    complex: '善用复杂句式，表达层次丰富'
   }
 
   // 分析句子长度偏好
@@ -280,15 +422,39 @@ export const generateStyleDescription = (analysis) => {
     punctuationStyle = '标点使用克制，以陈述为主，语气平稳。'
   }
 
-  // 提取关键主题词（排除通用词后的高频词）
+  // 提取关键主题词
   const topKeywords = analysis.keywords.slice(0, 10).map(k => k.word)
   const themeWords = topKeywords.slice(0, 5).join('、')
 
-  // 提取常用表达（短语）
+  // 提取常用表达
   const topPhrases = analysis.commonPhrases.slice(0, 8).map(p => p.phrase)
   const expressionExamples = topPhrases.length > 0
     ? `\n\n【常用表达方式】\n${topPhrases.map((p, i) => `${i + 1}. "${p}"`).join('\n')}`
     : ''
+
+  // 分析开头方式
+  const opening = analysis.openingPatterns
+  const openingTotal = opening.patterns.question + opening.patterns.story + opening.patterns.statement
+  let openingStyle = ''
+  if (opening.patterns.question > openingTotal * 0.3) {
+    openingStyle = '常用问句开头，引发读者思考'
+    if (opening.examples.question.length > 0) {
+      openingStyle += `\n   例如："${opening.examples.question[0]}..."`
+    }
+  } else if (opening.patterns.story > openingTotal * 0.3) {
+    openingStyle = '喜欢用故事或场景开头，营造代入感'
+    if (opening.examples.story.length > 0) {
+      openingStyle += `\n   例如："${opening.examples.story[0]}..."`
+    }
+  } else {
+    openingStyle = '习惯开门见山，直接陈述观点'
+    if (opening.examples.statement.length > 0) {
+      openingStyle += `\n   例如："${opening.examples.statement[0]}..."`
+    }
+  }
+
+  // 分析转折词使用
+  const topTransitions = analysis.transitions.slice(0, 3).map(([word, count]) => word).join('、')
 
   return `
 【写作风格档案】
@@ -296,26 +462,49 @@ export const generateStyleDescription = (analysis) => {
 1️⃣ 语言风格
 - 整体语气：${toneMap[analysis.tone] || '中性客观'}
 - 句式特点：${sentenceLengthStyle}（平均 ${analysis.avgSentenceLength} 字/句）
+- 句式复杂度：${complexityMap[analysis.complexity.diversity]}
+  · 简单句：${analysis.complexity.simple}%
+  · 复合句：${analysis.complexity.compound}%
+  · 复杂句：${analysis.complexity.complex}%
 - 标点风格：${punctuationStyle}
 
-2️⃣ 主题偏好
-经常探讨的话题关键词：${themeWords}
+2️⃣ 叙述视角
+- ${perspectiveMap[analysis.perspective.dominant]}
+- 人称分布：我(${analysis.perspective.firstPerson}%) / 你(${analysis.perspective.secondPerson}%) / 他(${analysis.perspective.thirdPerson}%)
 
-3️⃣ 表达习惯
+3️⃣ 行文习惯
+- 开头方式：${openingStyle}
+- 常用转折词：${topTransitions}
+- 主题偏好：${themeWords}
+
+4️⃣ 表达特征
 ${punctuationStyle.includes('感叹号') ? '- 情感表达直接，不回避主观感受' : ''}
 ${punctuationStyle.includes('问句') ? '- 喜欢通过提问引导思考，与读者建立对话感' : ''}
-${analysis.avgSentenceLength > 25 ? '- 善于使用复杂句式，层层递进表达观点' : '- 句子简洁有力，一针见血'}
+${analysis.perspective.dominant === 'first' ? '- 强调个人经历和主观感受，真实感强' : ''}
+${analysis.perspective.dominant === 'second' ? '- 直接对话读者，互动性强' : ''}
+${analysis.complexity.diversity === 'complex' ? '- 善于使用复杂句式，层层递进表达观点' : '- 句子简洁有力，一针见血'}
 ${topPhrases.length > 3 ? `- 有标志性的表达习惯，形成个人语言风格` : ''}
 ${expressionExamples}
 
-4️⃣ 写作建议
-当你模仿这种文风时：
+5️⃣ 模仿指南
+当你用这种文风写作时：
+
+**思维方式**
+${opening.patterns.question > openingTotal * 0.2 ? '- 可以用问题引入话题，引发思考' : ''}
+${analysis.perspective.dominant === 'first' ? '- 以第一人称视角，分享个人经历和感受' : ''}
+${analysis.perspective.dominant === 'second' ? '- 用第二人称直接对话，增强参与感' : ''}
+
+**语言习惯**
 - 保持 ${toneMap[analysis.tone]} 的语气，不要过于正式或随意
 - 句子长度控制在 ${Math.max(10, analysis.avgSentenceLength - 5)}-${analysis.avgSentenceLength + 5} 字之间
 - ${punctuationStyle.includes('感叹号') ? '适当使用感叹号表达态度' : '标点保持克制，少用感叹号'}
 - ${punctuationStyle.includes('问句') ? '可以用反问和设问增强互动感' : '以陈述句为主'}
+- 常用这些转折词：${topTransitions}
+
+**表达细节**
 - 关注 "${themeWords}" 这些核心主题
 ${topPhrases.length > 0 ? `- 尝试使用这些特色表达：${topPhrases.slice(0, 3).join('、')}` : ''}
+${opening.examples.question.length > 0 || opening.examples.story.length > 0 || opening.examples.statement.length > 0 ? `- 开头方式要像：${opening.examples.question[0] || opening.examples.story[0] || opening.examples.statement[0]}...` : ''}
 
 📊 数据基础：基于 ${analysis.totalWords.toLocaleString()} 字的文本分析
   `.trim()
