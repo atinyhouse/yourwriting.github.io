@@ -93,15 +93,15 @@ export const extractWechatArticle = async (url) => {
     const article = reader.parse()
 
     if (!article) {
-      console.error('Readability 无法解析文章')
+      console.error('Readability 无法解析文章，尝试备用方法')
       // 如果 Readability 失败，尝试手动提取
       return await fallbackExtraction(doc, url)
     }
 
     console.log('Readability 提取成功:')
     console.log('- 标题:', article.title)
-    console.log('- 长度:', article.textContent.length, '字符')
-    console.log('- 摘要:', article.excerpt)
+    console.log('- HTML 内容长度:', article.content?.length || 0)
+    console.log('- 纯文本长度:', article.textContent?.length || 0)
 
     // 将 HTML 内容转换为纯文本
     const tempDiv = document.createElement('div')
@@ -113,8 +113,12 @@ export const extractWechatArticle = async (url) => {
     const content = tempDiv.textContent || tempDiv.innerText || ''
     const cleanedContent = content.replace(/\s+/g, ' ').trim()
 
-    if (!cleanedContent || cleanedContent.length < 100) {
-      throw new Error('提取到的正文内容太少（' + cleanedContent.length + ' 字），请检查链接是否正确')
+    console.log('清理后的内容长度:', cleanedContent.length)
+
+    // 如果 Readability 提取的内容太少，尝试备用方法
+    if (cleanedContent.length < 500) {
+      console.warn('Readability 提取的内容太少（' + cleanedContent.length + ' 字），尝试备用方法')
+      return await fallbackExtraction(doc, url)
     }
 
     return {
@@ -216,18 +220,19 @@ export const extractWebContent = async (url) => {
 
     const reader = new Readability(doc, {
       keepClasses: false,
-      charThreshold: 200
+      charThreshold: 200  // 降低阈值，因为有些页面内容确实较少
     })
 
     const article = reader.parse()
 
     if (!article) {
-      throw new Error('无法自动提取网页内容，请使用"直接粘贴"功能')
+      throw new Error('无法自动提取网页内容\n\n可能原因：\n- 这是一个列表页面，不是单篇文章\n- 页面需要JavaScript渲染\n- 页面结构特殊\n\n请尝试：\n1. 打开具体的文章页面（而不是首页或列表页）\n2. 或使用"直接粘贴内容"功能')
     }
 
     console.log('Readability 提取成功:')
     console.log('- 标题:', article.title)
-    console.log('- 长度:', article.textContent.length, '字符')
+    console.log('- HTML 内容长度:', article.content?.length || 0)
+    console.log('- 纯文本长度:', article.textContent?.length || 0)
 
     // 将 HTML 内容转换为纯文本
     const tempDiv = document.createElement('div')
@@ -237,8 +242,10 @@ export const extractWebContent = async (url) => {
     const content = tempDiv.textContent || tempDiv.innerText || ''
     const cleanedContent = content.replace(/\s+/g, ' ').trim()
 
-    if (!cleanedContent || cleanedContent.length < 50) {
-      throw new Error('提取到的内容太少')
+    console.log('清理后的内容长度:', cleanedContent.length)
+
+    if (!cleanedContent || cleanedContent.length < 200) {
+      throw new Error(`提取到的内容太少（${cleanedContent.length} 字）\n\n💡 提示：\n- 这个链接可能是博客首页或列表页\n- 请打开具体的某一篇文章的链接\n- 例如：https://atinyhouse.github.io/posts/article-title/\n\n或者使用"直接粘贴内容"功能手动添加`)
     }
 
     return {
