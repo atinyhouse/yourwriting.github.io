@@ -252,15 +252,71 @@ export const generateStyleDescription = (analysis) => {
     neutral: '中性客观'
   }
 
-  const topKeywords = analysis.keywords.slice(0, 10).map(k => k.word).join('、')
-  const topPhrases = analysis.commonPhrases.slice(0, 5).map(p => p.phrase).join('、')
+  // 分析句子长度偏好
+  const sentenceLengthStyle = analysis.avgSentenceLength < 15
+    ? '偏好使用短句，节奏明快，适合表达清晰的观点'
+    : analysis.avgSentenceLength < 25
+    ? '句子长度适中，兼顾表达深度和阅读流畅性'
+    : '倾向使用长句，善于铺陈和细节描写，表达更有层次感'
+
+  // 分析标点使用习惯
+  const punc = analysis.punctuationStyle
+  const totalPunc = Object.values(punc).reduce((sum, count) => sum + count, 0)
+  const exclamationRatio = ((punc['！'] + punc['!']) / totalPunc * 100).toFixed(1)
+  const questionRatio = ((punc['？'] + punc['?']) / totalPunc * 100).toFixed(1)
+  const ellipsisRatio = ((punc['…'] || 0) / totalPunc * 100).toFixed(1)
+
+  let punctuationStyle = ''
+  if (parseFloat(exclamationRatio) > 5) {
+    punctuationStyle += '经常使用感叹号，表达情感丰富、态度鲜明；'
+  }
+  if (parseFloat(questionRatio) > 3) {
+    punctuationStyle += '善用问句与读者互动，引发思考；'
+  }
+  if (parseFloat(ellipsisRatio) > 2) {
+    punctuationStyle += '使用省略号营造留白和思考空间；'
+  }
+  if (!punctuationStyle) {
+    punctuationStyle = '标点使用克制，以陈述为主，语气平稳。'
+  }
+
+  // 提取关键主题词（排除通用词后的高频词）
+  const topKeywords = analysis.keywords.slice(0, 10).map(k => k.word)
+  const themeWords = topKeywords.slice(0, 5).join('、')
+
+  // 提取常用表达（短语）
+  const topPhrases = analysis.commonPhrases.slice(0, 8).map(p => p.phrase)
+  const expressionExamples = topPhrases.length > 0
+    ? `\n\n【常用表达方式】\n${topPhrases.map((p, i) => `${i + 1}. "${p}"`).join('\n')}`
+    : ''
 
   return `
-写作风格特征：
-- 语气：${toneMap[analysis.tone] || '中性'}
-- 平均句长：${analysis.avgSentenceLength} 字
-- 常用词汇：${topKeywords}
-- 常用短语：${topPhrases}
-- 总字数：${analysis.totalWords} 字
+【写作风格档案】
+
+1️⃣ 语言风格
+- 整体语气：${toneMap[analysis.tone] || '中性客观'}
+- 句式特点：${sentenceLengthStyle}（平均 ${analysis.avgSentenceLength} 字/句）
+- 标点风格：${punctuationStyle}
+
+2️⃣ 主题偏好
+经常探讨的话题关键词：${themeWords}
+
+3️⃣ 表达习惯
+${punctuationStyle.includes('感叹号') ? '- 情感表达直接，不回避主观感受' : ''}
+${punctuationStyle.includes('问句') ? '- 喜欢通过提问引导思考，与读者建立对话感' : ''}
+${analysis.avgSentenceLength > 25 ? '- 善于使用复杂句式，层层递进表达观点' : '- 句子简洁有力，一针见血'}
+${topPhrases.length > 3 ? `- 有标志性的表达习惯，形成个人语言风格` : ''}
+${expressionExamples}
+
+4️⃣ 写作建议
+当你模仿这种文风时：
+- 保持 ${toneMap[analysis.tone]} 的语气，不要过于正式或随意
+- 句子长度控制在 ${Math.max(10, analysis.avgSentenceLength - 5)}-${analysis.avgSentenceLength + 5} 字之间
+- ${punctuationStyle.includes('感叹号') ? '适当使用感叹号表达态度' : '标点保持克制，少用感叹号'}
+- ${punctuationStyle.includes('问句') ? '可以用反问和设问增强互动感' : '以陈述句为主'}
+- 关注 "${themeWords}" 这些核心主题
+${topPhrases.length > 0 ? `- 尝试使用这些特色表达：${topPhrases.slice(0, 3).join('、')}` : ''}
+
+📊 数据基础：基于 ${analysis.totalWords.toLocaleString()} 字的文本分析
   `.trim()
 }
