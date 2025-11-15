@@ -26,7 +26,9 @@ export const getStyleLibrary = async () => {
 
 // 保存文风库
 export const saveStyleLibrary = async (library) => {
-  await localforage.setItem(KEYS.STYLE_LIBRARY, library)
+  // 将 library 转换为纯对象，避免 Proxy 对象导致的克隆错误
+  const plainLibrary = JSON.parse(JSON.stringify(library))
+  await localforage.setItem(KEYS.STYLE_LIBRARY, plainLibrary)
 }
 
 // 添加内容到文风库
@@ -66,7 +68,9 @@ export const getConversations = async () => {
 
 // 保存对话历史
 export const saveConversations = async (conversations) => {
-  await localforage.setItem(KEYS.CONVERSATIONS, conversations)
+  // 将 conversations 转换为纯对象，避免 Proxy 对象导致的克隆错误
+  const plainConversations = JSON.parse(JSON.stringify(conversations))
+  await localforage.setItem(KEYS.CONVERSATIONS, plainConversations)
 }
 
 // 清空对话历史
@@ -89,7 +93,9 @@ export const getSettings = async () => {
 
 // 保存设置
 export const saveSettings = async (settings) => {
-  await localforage.setItem(KEYS.SETTINGS, settings)
+  // 将 settings 转换为纯对象，避免 Proxy 对象导致的克隆错误
+  const plainSettings = JSON.parse(JSON.stringify(settings))
+  await localforage.setItem(KEYS.SETTINGS, plainSettings)
 }
 
 // 导出所有数据
