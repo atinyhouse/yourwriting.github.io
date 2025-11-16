@@ -50,56 +50,35 @@
               </summary>
               <div class="wechat-import-content">
                 <p style="margin-bottom: var(--spacing-sm); font-size: 14px; color: var(--color-gray-dark); font-weight: 600;">
-                  方法1：通过文章页面获取 biz 参数（最简单）
+                  📋 操作步骤（简单5步）
                 </p>
                 <ol style="margin-left: 20px; font-size: 13px; line-height: 1.8; color: var(--color-gray-dark); margin-bottom: var(--spacing-md);">
-                  <li>在微信中打开任一公众号文章</li>
-                  <li>右键 → 审查元素（或按F12）打开开发者工具</li>
-                  <li>切换到 Network（网络）标签</li>
-                  <li>刷新页面，查找包含 <code>__biz=</code> 的请求</li>
-                  <li>复制 <code>__biz=</code> 后面的参数值（例如：Mzg3MzE1MjIyNQ==）</li>
-                  <li>粘贴到下方输入框</li>
+                  <li><strong>在微信中</strong>打开任一公众号文章</li>
+                  <li>点击右上角 <strong>"..."</strong> → 选择 <strong>"查看历史消息"</strong></li>
+                  <li>在历史消息页面，<strong>右键</strong> → 选择 <strong>"查看网页源代码"</strong>（或按 Ctrl+U / Cmd+U）</li>
+                  <li><strong>全选</strong>（Ctrl+A / Cmd+A）并<strong>复制</strong>整个 HTML 代码</li>
+                  <li><strong>粘贴</strong>到下方文本框，点击"批量导入"按钮</li>
                 </ol>
-                <input
-                  v-model="wechatBizInput"
-                  type="text"
-                  placeholder="粘贴 biz 参数（例如：Mzg3MzE1MjIyNQ==）"
-                  class="mt-sm"
-                />
-                <button
-                  @click="handleWechatBizImport"
-                  class="mt-sm"
-                  :disabled="!wechatBizInput.trim() || isLoadingUrl"
-                  style="margin-right: var(--spacing-sm);"
-                >
-                  {{ isLoadingUrl ? '正在获取...' : '通过 biz 批量导入' }}
-                </button>
 
-                <hr style="margin: var(--spacing-md) 0; border: none; border-top: 1px solid var(--color-gray);" />
+                <div style="background: #fff8e1; border: 2px solid #ffc107; padding: var(--spacing-sm); margin-bottom: var(--spacing-md); font-size: 13px; line-height: 1.6;">
+                  <strong>💡 为什么要这样做？</strong><br>
+                  微信公众号历史消息需要登录才能访问。当你在微信中打开历史页面时，HTML源代码中已经包含了所有文章的链接数据（msgList），我们直接解析这些数据即可。
+                </div>
 
-                <p style="margin-bottom: var(--spacing-sm); font-size: 14px; color: var(--color-gray-dark); font-weight: 600;">
-                  方法2：粘贴历史页面 HTML 源代码
-                </p>
-                <ol style="margin-left: 20px; font-size: 13px; line-height: 1.8; color: var(--color-gray-dark);">
-                  <li>在微信中打开任一公众号文章</li>
-                  <li>点击右上角 "..." → 查看历史消息</li>
-                  <li>在历史消息页面，右键 → 查看网页源代码</li>
-                  <li>全选并复制整个 HTML 代码</li>
-                  <li>粘贴到下方文本框</li>
-                </ol>
                 <textarea
                   v-model="wechatHtmlInput"
-                  placeholder="粘贴公众号历史页面的 HTML 源代码..."
-                  rows="6"
+                  placeholder="粘贴公众号历史页面的完整 HTML 源代码...&#10;&#10;提示：HTML 通常以 <!DOCTYPE html> 或 <html> 开头"
+                  rows="8"
                   class="mt-sm"
-                  style="font-family: monospace; font-size: 12px;"
+                  style="font-family: monospace; font-size: 12px; line-height: 1.4;"
                 ></textarea>
                 <button
                   @click="handleWechatHtmlImport"
                   class="mt-sm"
                   :disabled="!wechatHtmlInput.trim() || isLoadingUrl"
+                  style="width: 100%; padding: 12px; font-size: 14px; font-weight: 600;"
                 >
-                  {{ isLoadingUrl ? '正在解析...' : '解析 HTML 并批量导入' }}
+                  {{ isLoadingUrl ? '正在解析并批量导入...' : '🚀 批量导入整个公众号' }}
                 </button>
               </div>
             </details>
@@ -352,8 +331,7 @@ const library = ref({ sources: [], analysis: null, totalWords: 0 })
 const manualContent = ref('')
 const manualTitle = ref('')
 const urlInput = ref('')
-const wechatBizInput = ref('') // 新增：微信公众号 biz 参数输入
-const wechatHtmlInput = ref('') // 新增：微信HTML源码输入
+const wechatHtmlInput = ref('') // 微信HTML源码输入
 const isLoadingUrl = ref(false)
 const fileInput = ref(null)
 
@@ -614,89 +592,7 @@ const handleBatchImport = async () => {
   }
 }
 
-// 新增：微信 biz 参数导入处理函数（最简单的方法）
-const handleWechatBizImport = async () => {
-  if (!wechatBizInput.value.trim()) return
-
-  isLoadingUrl.value = true
-  batchProgress.value = {
-    show: true,
-    current: 0,
-    total: 0,
-    currentUrl: '',
-    success: 0,
-    failed: 0
-  }
-
-  try {
-    const biz = wechatBizInput.value.trim()
-    console.log('🚀 使用 biz 参数获取公众号历史:', biz)
-
-    // 直接构建 profile URL
-    const profileUrl = `https://mp.weixin.qq.com/mp/profile_ext?action=home&__biz=${encodeURIComponent(biz)}`
-    console.log('📄 公众号历史消息页URL:', profileUrl)
-
-    // 通过 CORS 代理获取历史页面
-    console.log('正在获取公众号历史消息页面...')
-    const html = await (await import('../utils/urlExtractor')).fetchWithCORS(profileUrl)
-
-    console.log('✅ 成功获取历史消息页面，HTML长度:', html.length)
-
-    // 使用 extractArticleLinks 解析 HTML 中的文章链接
-    const links = await extractArticleLinks(html)
-
-    if (links.length === 0) {
-      alert('未能从公众号历史页面提取到文章链接。\n\n可能原因：\n1. 该公众号需要关注后才能查看历史消息\n2. 该公众号尚未发布任何文章\n3. 微信服务器返回了登录页面\n\n💡 建议：尝试使用「方法2：粘贴历史页面 HTML 源代码」')
-      return
-    }
-
-    const proceed = confirm(`成功找到 ${links.length} 篇文章！\n\n确定要全部导入吗？\n\n注意：这可能需要 ${Math.ceil(links.length / 60)} 到 ${Math.ceil(links.length / 30)} 分钟。`)
-    if (!proceed) {
-      return
-    }
-
-    batchProgress.value.total = links.length
-
-    // 批量提取文章内容
-    await batchExtractArticles(links, (progress) => {
-      batchProgress.value.current = progress.current
-      batchProgress.value.currentUrl = progress.url
-
-      if (progress.status === 'success') {
-        batchProgress.value.success++
-
-        // 立即添加到文风库
-        const cleanedContent = cleanContent(progress.article.content)
-        if (cleanedContent && cleanedContent.length >= 200) {
-          addToStyleLibrary({
-            type: 'url',
-            title: progress.article.title,
-            content: cleanedContent,
-            url: progress.url
-          })
-        }
-      } else if (progress.status === 'failed') {
-        batchProgress.value.failed++
-      }
-    })
-
-    // 刷新文风库并重新分析
-    library.value = await getStyleLibrary()
-    await reanalyze()
-
-    wechatBizInput.value = ''
-    alert(`✅ 批量导入完成！\n\n总计: ${links.length} 篇\n成功: ${batchProgress.value.success} 篇\n失败: ${batchProgress.value.failed} 篇`)
-
-    batchProgress.value.show = false
-  } catch (error) {
-    console.error('biz导入失败:', error)
-    alert(`导入失败: ${error.message}\n\n💡 如果遇到 CORS 或登录限制，请尝试使用「方法2：粘贴历史页面 HTML 源代码」`)
-  } finally {
-    isLoadingUrl.value = false
-  }
-}
-
-// 新增：微信HTML源码导入处理函数
+// 微信HTML源码导入处理函数
 const handleWechatHtmlImport = async () => {
   if (!wechatHtmlInput.value.trim()) return
 
