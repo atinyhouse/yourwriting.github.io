@@ -12,7 +12,7 @@ const CORS_PROXIES = [
 ]
 
 // 使用多个代理尝试获取网页内容
-const fetchWithCORS = async (url) => {
+export const fetchWithCORS = async (url) => {
   let lastError = null
 
   // 尝试所有代理
