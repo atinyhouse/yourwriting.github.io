@@ -58,28 +58,6 @@
         </div>
       </div>
 
-      <!-- 底部操作 -->
-      <div class="sidebar-footer">
-        <button @click="exportConversations" class="footer-btn">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 11V3M8 11L5 8M8 11L11 8M3 13H13" stroke="currentColor" stroke-width="1.5"/>
-          </svg>
-          Export
-        </button>
-        <button @click="triggerImport" class="footer-btn">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 3V11M8 3L5 6M8 3L11 6M3 13H13" stroke="currentColor" stroke-width="1.5"/>
-          </svg>
-          Import
-        </button>
-        <input
-          ref="importInput"
-          type="file"
-          accept=".json"
-          @change="importConversations"
-          style="display: none"
-        />
-      </div>
     </aside>
 
     <!-- 主内容区 -->
@@ -335,7 +313,18 @@ const handleSend = async () => {
   }
 
   await addMessageToConversation(currentConversationId.value, userMessage)
-  currentConversation.value = await getConversation(currentConversationId.value)
+  // 添加用户消息后重新获取对话
+  const updatedConv = await getConversation(currentConversationId.value)
+
+  // 手动添加用户消息到本地显示（避免重复获取）
+  if (currentConversation.value && !currentConversation.value.messages.find(m => m.content === userMessage.content && m.role === 'user')) {
+    currentConversation.value.messages.push({
+      ...userMessage,
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString()
+    })
+  }
+
   conversations.value = await getConversations()
   filteredConversations.value = conversations.value
 
@@ -346,6 +335,9 @@ const handleSend = async () => {
   scrollToBottom()
 
   try {
+    // 重新加载文风库，确保使用最新的分析结果
+    styleLibrary.value = await getStyleLibrary()
+
     let styleDescription = ''
     if (settings.value.enableStyleTransfer && styleLibrary.value.analysis) {
       styleDescription = generateStyleDescription(styleLibrary.value.analysis)

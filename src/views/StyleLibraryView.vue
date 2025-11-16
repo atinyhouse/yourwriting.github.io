@@ -844,6 +844,7 @@ const reanalyze = async () => {
   if (library.value.sources.length === 0) {
     library.value.analysis = null
     await saveStyleLibrary(library.value)
+    library.value = await getStyleLibrary() // 重新加载确保状态同步
     return
   }
 
@@ -860,6 +861,9 @@ const reanalyze = async () => {
     library.value.analysis = await analyzeStyleWithAI(library.value.sources, settings.value.deepseekApiKey)
     library.value.totalWords = library.value.analysis.totalWords
     await saveStyleLibrary(library.value)
+
+    // 重新从存储加载，确保数据同步
+    library.value = await getStyleLibrary()
 
     alert('✅ AI 深度分析完成！\n\n分析结果已保存到文风库。')
   } catch (error) {
@@ -940,17 +944,17 @@ const getTimeOrientationLabel = (orientation) => {
 
 <style scoped>
 .style-library-view {
-  padding: var(--spacing-lg) 0;
+  padding: var(--spacing-2xl) 0;
 }
 
 .subtitle {
   color: var(--color-gray-dark);
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-2xl);
 }
 
 .section {
-  margin-bottom: var(--spacing-xl);
-  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-3xl);
+  padding: var(--spacing-xl);
   background-color: var(--color-white);
   border: 1px solid var(--color-gray);
 }
@@ -959,12 +963,12 @@ const getTimeOrientationLabel = (orientation) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
 }
 
 .upload-section, .manual-input, .url-input {
-  margin-bottom: var(--spacing-lg);
-  padding-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-xl);
   border-bottom: 1px solid var(--color-gray);
 }
 
@@ -976,7 +980,7 @@ const getTimeOrientationLabel = (orientation) => {
 
 .button-group {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
   flex-wrap: wrap;
 }
 
@@ -998,13 +1002,14 @@ const getTimeOrientationLabel = (orientation) => {
 }
 
 .batch-progress {
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
   background-color: var(--color-gray-light);
   border: 1px solid var(--color-gray);
+  margin-bottom: var(--spacing-lg);
 }
 
 .batch-progress h4 {
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
 }
 
 .progress-bar {
@@ -1102,12 +1107,12 @@ const getTimeOrientationLabel = (orientation) => {
 .analysis-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
 }
 
 .analysis-item {
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
   background-color: var(--color-gray-light);
   border: 1px solid var(--color-gray);
   text-align: center;
@@ -1134,7 +1139,7 @@ const getTimeOrientationLabel = (orientation) => {
 .keywords, .phrases {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
 }
 
 .keyword-tag, .phrase-tag {
@@ -1155,8 +1160,8 @@ const getTimeOrientationLabel = (orientation) => {
 }
 
 .analysis-category {
-  margin-bottom: var(--spacing-lg);
-  padding-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-2xl);
+  padding-bottom: var(--spacing-xl);
   border-bottom: 2px solid var(--color-gray);
 }
 
@@ -1165,7 +1170,7 @@ const getTimeOrientationLabel = (orientation) => {
 }
 
 .analysis-category h3 {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
   font-size: 18px;
   font-weight: 700;
 }
@@ -1181,12 +1186,12 @@ const getTimeOrientationLabel = (orientation) => {
 .style-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
 }
 
 .style-card {
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
   background-color: var(--color-gray-light);
   border: 2px solid var(--color-black);
 }
@@ -1204,15 +1209,15 @@ const getTimeOrientationLabel = (orientation) => {
 }
 
 .complexity-section {
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
   background-color: var(--color-gray-light);
   border: 1px solid var(--color-gray);
 }
 
 .complexity-bars {
   display: grid;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-sm);
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
 }
 
 .complexity-bar {
@@ -1253,7 +1258,7 @@ const getTimeOrientationLabel = (orientation) => {
 }
 
 .perspective-section {
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
   background-color: var(--color-gray-light);
   border: 1px solid var(--color-gray);
 }
@@ -1261,14 +1266,14 @@ const getTimeOrientationLabel = (orientation) => {
 .perspective-main {
   font-size: 16px;
   font-weight: 600;
-  margin-bottom: var(--spacing-md);
-  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
   border-bottom: 1px solid var(--color-gray);
 }
 
 .perspective-distribution {
   display: grid;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
 }
 
 .person-item {
@@ -1287,7 +1292,7 @@ const getTimeOrientationLabel = (orientation) => {
 
 .opening-section,
 .transitions-section {
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
   background-color: var(--color-white);
   border: 1px solid var(--color-gray);
 }
@@ -1295,15 +1300,15 @@ const getTimeOrientationLabel = (orientation) => {
 .opening-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-md);
-  margin-top: var(--spacing-sm);
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-md);
 }
 
 .opening-item {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm);
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
   background-color: var(--color-gray-light);
   border: 1px solid var(--color-gray);
   text-align: center;
@@ -1322,8 +1327,8 @@ const getTimeOrientationLabel = (orientation) => {
 }
 
 .opening-examples {
-  margin-top: var(--spacing-sm);
-  padding: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
   background-color: var(--color-gray-light);
   border-left: 4px solid var(--color-blue);
 }
@@ -1331,7 +1336,7 @@ const getTimeOrientationLabel = (orientation) => {
 .example-label {
   font-size: 12px;
   color: var(--color-gray-dark);
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
   font-weight: 700;
 }
 
@@ -1344,8 +1349,8 @@ const getTimeOrientationLabel = (orientation) => {
 .transitions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-xs);
-  margin-top: var(--spacing-sm);
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
 }
 
 .transition-tag {
@@ -1366,13 +1371,13 @@ const getTimeOrientationLabel = (orientation) => {
 .analysis-reminder {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-xl);
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-left: 4px solid var(--color-primary);
   border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-2xl);
   box-shadow: var(--shadow-sm);
 }
 
@@ -1392,25 +1397,25 @@ const getTimeOrientationLabel = (orientation) => {
 .analysis-display {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-2xl);
 }
 
 .analysis-section {
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-xl);
+  padding: var(--spacing-2xl);
   box-shadow: var(--shadow-sm);
 }
 
 .analysis-section-title {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-xl);
   font-weight: 600;
-  margin: 0 0 var(--spacing-lg);
+  margin: 0 0 var(--spacing-xl);
   color: var(--color-text-primary);
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
 }
 
 /* 概述和指南 */
