@@ -12,7 +12,7 @@ const CORS_PROXIES = [
 ]
 
 // 使用多个代理尝试获取网页内容
-export const fetchWithCORS = async (url) => {
+export const fetchWithCORS = async (url, customHeaders = {}) => {
   let lastError = null
 
   // 尝试所有代理
@@ -27,6 +27,7 @@ export const fetchWithCORS = async (url) => {
         method: 'GET',
         headers: {
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          ...customHeaders // 合并自定义headers（包括cookie）
         },
         signal: AbortSignal.timeout(20000) // 20秒超时
       })

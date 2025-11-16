@@ -42,44 +42,111 @@
             </button>
           </div>
 
-          <!-- 微信公众号HTML源码导入 -->
+          <!-- 微信公众号批量导入 -->
           <div class="wechat-html-import mt-md">
             <details open>
               <summary style="cursor: pointer; font-weight: 600; margin-bottom: var(--spacing-sm);">
-                🔧 微信公众号批量导入（推荐）
+                🔧 微信公众号批量导入
               </summary>
               <div class="wechat-import-content">
-                <p style="margin-bottom: var(--spacing-sm); font-size: 14px; color: var(--color-gray-dark); font-weight: 600;">
-                  📋 操作步骤（简单5步）
-                </p>
-                <ol style="margin-left: 20px; font-size: 13px; line-height: 1.8; color: var(--color-gray-dark); margin-bottom: var(--spacing-md);">
-                  <li><strong>在微信中</strong>打开任一公众号文章</li>
-                  <li>点击右上角 <strong>"..."</strong> → 选择 <strong>"查看历史消息"</strong></li>
-                  <li>在历史消息页面，<strong>右键</strong> → 选择 <strong>"查看网页源代码"</strong>（或按 Ctrl+U / Cmd+U）</li>
-                  <li><strong>全选</strong>（Ctrl+A / Cmd+A）并<strong>复制</strong>整个 HTML 代码</li>
-                  <li><strong>粘贴</strong>到下方文本框，点击"批量导入"按钮</li>
-                </ol>
-
-                <div style="background: #fff8e1; border: 2px solid #ffc107; padding: var(--spacing-sm); margin-bottom: var(--spacing-md); font-size: 13px; line-height: 1.6;">
-                  <strong>💡 为什么要这样做？</strong><br>
-                  微信公众号历史消息需要登录才能访问。当你在微信中打开历史页面时，HTML源代码中已经包含了所有文章的链接数据（msgList），我们直接解析这些数据即可。
+                <!-- 方法选择 -->
+                <div style="display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-md);">
+                  <button
+                    @click="wechatImportMethod = 'cookie'"
+                    :class="['method-toggle-btn', { active: wechatImportMethod === 'cookie' }]"
+                    style="flex: 1; padding: 10px; font-size: 13px; font-weight: 600; border: 2px solid var(--color-gray); background: white; cursor: pointer;"
+                  >
+                    🔑 方法1：biz + Cookie（推荐）
+                  </button>
+                  <button
+                    @click="wechatImportMethod = 'html'"
+                    :class="['method-toggle-btn', { active: wechatImportMethod === 'html' }]"
+                    style="flex: 1; padding: 10px; font-size: 13px; font-weight: 600; border: 2px solid var(--color-gray); background: white; cursor: pointer;"
+                  >
+                    📄 方法2：粘贴 HTML
+                  </button>
                 </div>
 
-                <textarea
-                  v-model="wechatHtmlInput"
-                  placeholder="粘贴公众号历史页面的完整 HTML 源代码...&#10;&#10;提示：HTML 通常以 <!DOCTYPE html> 或 <html> 开头"
-                  rows="8"
-                  class="mt-sm"
-                  style="font-family: monospace; font-size: 12px; line-height: 1.4;"
-                ></textarea>
-                <button
-                  @click="handleWechatHtmlImport"
-                  class="mt-sm"
-                  :disabled="!wechatHtmlInput.trim() || isLoadingUrl"
-                  style="width: 100%; padding: 12px; font-size: 14px; font-weight: 600;"
-                >
-                  {{ isLoadingUrl ? '正在解析并批量导入...' : '🚀 批量导入整个公众号' }}
-                </button>
+                <!-- 方法1：biz + Cookie -->
+                <div v-if="wechatImportMethod === 'cookie'" class="import-method">
+                  <p style="margin-bottom: var(--spacing-sm); font-size: 14px; color: var(--color-gray-dark); font-weight: 600;">
+                    📋 操作步骤（6步）
+                  </p>
+                  <ol style="margin-left: 20px; font-size: 13px; line-height: 1.8; color: var(--color-gray-dark); margin-bottom: var(--spacing-md);">
+                    <li><strong>在微信中</strong>打开任一公众号文章</li>
+                    <li>按 <strong>F12</strong> 打开开发者工具 → 切换到 <strong>Network</strong>（网络）标签</li>
+                    <li><strong>刷新页面</strong>，找到任意一个请求（如 appmsgreport）</li>
+                    <li>在请求详情中，复制 <code>__biz</code> 参数的值（例如：Mzg3MzE1MjIyNQ==）</li>
+                    <li>复制请求头中的 <code>cookie</code> 字段的完整内容</li>
+                    <li>粘贴到下方输入框</li>
+                  </ol>
+
+                  <div style="background: #fff8e1; border: 2px solid #ffc107; padding: var(--spacing-sm); margin-bottom: var(--spacing-md); font-size: 13px; line-height: 1.6;">
+                    <strong>⚠️ 隐私提示</strong><br>
+                    Cookie 包含你的登录信息，仅在本地浏览器使用，不会上传到任何服务器。但请注意不要泄露给他人。
+                  </div>
+
+                  <label style="display: block; margin-bottom: var(--spacing-xs); font-size: 13px; font-weight: 600; color: var(--color-gray-dark);">
+                    biz 参数：
+                  </label>
+                  <input
+                    v-model="wechatBizInput"
+                    type="text"
+                    placeholder="例如：Mzg3MzE1MjIyNQ=="
+                    class="mt-xs"
+                    style="width: 100%; margin-bottom: var(--spacing-sm);"
+                  />
+
+                  <label style="display: block; margin-bottom: var(--spacing-xs); font-size: 13px; font-weight: 600; color: var(--color-gray-dark);">
+                    Cookie：
+                  </label>
+                  <textarea
+                    v-model="wechatCookieInput"
+                    placeholder="粘贴完整的 cookie 字符串...&#10;&#10;例如：rewardsn=; wxtokenkey=777; ua_id=xxx; wxuin=xxx; ..."
+                    rows="4"
+                    class="mt-xs"
+                    style="width: 100%; font-family: monospace; font-size: 12px; margin-bottom: var(--spacing-sm);"
+                  ></textarea>
+
+                  <button
+                    @click="handleWechatCookieImport"
+                    class="mt-sm"
+                    :disabled="!wechatBizInput.trim() || !wechatCookieInput.trim() || isLoadingUrl"
+                    style="width: 100%; padding: 12px; font-size: 14px; font-weight: 600;"
+                  >
+                    {{ isLoadingUrl ? '正在获取并批量导入...' : '🚀 批量导入整个公众号' }}
+                  </button>
+                </div>
+
+                <!-- 方法2：HTML 源代码 -->
+                <div v-if="wechatImportMethod === 'html'" class="import-method">
+                  <p style="margin-bottom: var(--spacing-sm); font-size: 14px; color: var(--color-gray-dark); font-weight: 600;">
+                    📋 操作步骤（5步）
+                  </p>
+                  <ol style="margin-left: 20px; font-size: 13px; line-height: 1.8; color: var(--color-gray-dark); margin-bottom: var(--spacing-md);">
+                    <li><strong>在微信中</strong>打开任一公众号文章</li>
+                    <li>点击右上角 <strong>"..."</strong> → 选择 <strong>"查看历史消息"</strong></li>
+                    <li>在历史消息页面，<strong>右键</strong> → 选择 <strong>"查看网页源代码"</strong>（或按 Ctrl+U / Cmd+U）</li>
+                    <li><strong>全选</strong>（Ctrl+A / Cmd+A）并<strong>复制</strong>整个 HTML 代码</li>
+                    <li><strong>粘贴</strong>到下方文本框，点击"批量导入"按钮</li>
+                  </ol>
+
+                  <textarea
+                    v-model="wechatHtmlInput"
+                    placeholder="粘贴公众号历史页面的完整 HTML 源代码...&#10;&#10;提示：HTML 通常以 <!DOCTYPE html> 或 <html> 开头"
+                    rows="8"
+                    class="mt-sm"
+                    style="width: 100%; font-family: monospace; font-size: 12px; line-height: 1.4;"
+                  ></textarea>
+                  <button
+                    @click="handleWechatHtmlImport"
+                    class="mt-sm"
+                    :disabled="!wechatHtmlInput.trim() || isLoadingUrl"
+                    style="width: 100%; padding: 12px; font-size: 14px; font-weight: 600;"
+                  >
+                    {{ isLoadingUrl ? '正在解析并批量导入...' : '🚀 批量导入整个公众号' }}
+                  </button>
+                </div>
               </div>
             </details>
           </div>
@@ -331,6 +398,9 @@ const library = ref({ sources: [], analysis: null, totalWords: 0 })
 const manualContent = ref('')
 const manualTitle = ref('')
 const urlInput = ref('')
+const wechatImportMethod = ref('cookie') // 'cookie' 或 'html'
+const wechatBizInput = ref('') // 微信公众号 biz 参数
+const wechatCookieInput = ref('') // 微信 cookie
 const wechatHtmlInput = ref('') // 微信HTML源码输入
 const isLoadingUrl = ref(false)
 const fileInput = ref(null)
@@ -587,6 +657,92 @@ const handleBatchImport = async () => {
   } catch (error) {
     console.error('批量导入失败:', error)
     alert(`批量导入失败: ${error.message}`)
+  } finally {
+    isLoadingUrl.value = false
+  }
+}
+
+// 微信 biz + Cookie 导入处理函数
+const handleWechatCookieImport = async () => {
+  if (!wechatBizInput.value.trim() || !wechatCookieInput.value.trim()) return
+
+  isLoadingUrl.value = true
+  batchProgress.value = {
+    show: true,
+    current: 0,
+    total: 0,
+    currentUrl: '',
+    success: 0,
+    failed: 0
+  }
+
+  try {
+    const biz = wechatBizInput.value.trim()
+    const cookie = wechatCookieInput.value.trim()
+
+    console.log('🚀 使用 biz + cookie 获取公众号历史:', biz)
+
+    // 构建 profile URL
+    const profileUrl = `https://mp.weixin.qq.com/mp/profile_ext?action=home&__biz=${encodeURIComponent(biz)}`
+    console.log('📄 公众号历史消息页URL:', profileUrl)
+
+    // 通过 CORS 代理 + Cookie 获取历史页面
+    console.log('正在获取公众号历史消息页面（带cookie）...')
+    const { fetchWithCORS } = await import('../utils/urlExtractor')
+    const html = await fetchWithCORS(profileUrl, { 'Cookie': cookie })
+
+    console.log('✅ 成功获取历史消息页面，HTML长度:', html.length)
+
+    // 使用 extractArticleLinks 解析 HTML 中的文章链接
+    const links = await extractArticleLinks(html)
+
+    if (links.length === 0) {
+      alert('未能从公众号历史页面提取到文章链接。\n\n可能原因：\n1. Cookie 已过期，请重新获取\n2. 该公众号需要关注后才能查看历史消息\n3. biz 参数不正确\n\n💡 建议：尝试使用「方法2：粘贴 HTML」')
+      return
+    }
+
+    const proceed = confirm(`成功找到 ${links.length} 篇文章！\n\n确定要全部导入吗？\n\n注意：这可能需要 ${Math.ceil(links.length / 60)} 到 ${Math.ceil(links.length / 30)} 分钟。`)
+    if (!proceed) {
+      return
+    }
+
+    batchProgress.value.total = links.length
+
+    // 批量提取文章内容
+    await batchExtractArticles(links, (progress) => {
+      batchProgress.value.current = progress.current
+      batchProgress.value.currentUrl = progress.url
+
+      if (progress.status === 'success') {
+        batchProgress.value.success++
+
+        // 立即添加到文风库
+        const cleanedContent = cleanContent(progress.article.content)
+        if (cleanedContent && cleanedContent.length >= 200) {
+          addToStyleLibrary({
+            type: 'url',
+            title: progress.article.title,
+            content: cleanedContent,
+            url: progress.url
+          })
+        }
+      } else if (progress.status === 'failed') {
+        batchProgress.value.failed++
+      }
+    })
+
+    // 刷新文风库并重新分析
+    library.value = await getStyleLibrary()
+    await reanalyze()
+
+    wechatBizInput.value = ''
+    wechatCookieInput.value = ''
+    alert(`✅ 批量导入完成！\n\n总计: ${links.length} 篇\n成功: ${batchProgress.value.success} 篇\n失败: ${batchProgress.value.failed} 篇`)
+
+    batchProgress.value.show = false
+  } catch (error) {
+    console.error('Cookie导入失败:', error)
+    alert(`导入失败: ${error.message}\n\n💡 可能原因：\n1. Cookie 格式不正确或已过期\n2. CORS 代理无法传递 Cookie\n3. 网络问题\n\n建议：尝试使用「方法2：粘贴 HTML」`)
   } finally {
     isLoadingUrl.value = false
   }
@@ -1246,6 +1402,22 @@ const getPerspectiveLabel = (dominant) => {
 
 .wechat-tip .final-note li {
   font-weight: 400;
+}
+
+/* 方法切换按钮样式 */
+.method-toggle-btn {
+  transition: all 0.2s ease;
+}
+
+.method-toggle-btn:hover {
+  background: var(--color-gray-light) !important;
+  border-color: var(--color-black) !important;
+}
+
+.method-toggle-btn.active {
+  background: var(--color-black) !important;
+  color: var(--color-white) !important;
+  border-color: var(--color-black) !important;
 }
 
 @media (max-width: 768px) {
