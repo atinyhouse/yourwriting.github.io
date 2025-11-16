@@ -79,23 +79,14 @@
       <section class="content-section">
         <div class="section-header">
           <h2 class="section-title">已导入内容</h2>
-          <div class="button-group">
-            <button
-              @click="() => reanalyze(false)"
-              class="btn-secondary"
-              :disabled="library.sources.length === 0 || isAnalyzing"
-            >
-              {{ isAnalyzing ? '分析中...' : '快速分析' }}
-            </button>
-            <button
-              @click="() => reanalyze(true)"
-              class="btn-primary"
-              :disabled="library.sources.length === 0 || isAnalyzing || !settings?.deepseekApiKey"
-              :title="!settings?.deepseekApiKey ? '请先在设置中配置 DeepSeek API Key' : ''"
-            >
-              {{ isAnalyzing ? '分析中...' : '🤖 AI 深度分析' }}
-            </button>
-          </div>
+          <button
+            @click="reanalyze"
+            class="btn-primary"
+            :disabled="library.sources.length === 0 || isAnalyzing || !settings?.deepseekApiKey"
+            :title="!settings?.deepseekApiKey ? '请先在设置中配置 DeepSeek API Key' : ''"
+          >
+            {{ isAnalyzing ? '分析中...' : '🤖 AI 分析文风' }}
+          </button>
         </div>
 
         <div v-if="library.sources.length === 0" class="empty-state">
@@ -104,22 +95,32 @@
           <span>请先添加您的文章来构建文风库</span>
         </div>
 
-        <div v-else class="sources-grid">
-          <div v-for="source in library.sources" :key="source.id" class="source-card">
-            <div class="source-header">
-              <h3>{{ source.title || '未命名' }}</h3>
-              <button @click="removeSource(source.id)" class="btn-icon" title="删除">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.5"/>
-                </svg>
-              </button>
+        <div v-else>
+          <div v-if="!library.analysis" class="analysis-reminder">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2Z" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M10 6V10M10 14H10.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span>已添加 {{library.sources.length}} 篇内容，点击右上角「🤖 AI 分析文风」按钮开始分析</span>
+          </div>
+
+          <div class="sources-grid">
+            <div v-for="source in library.sources" :key="source.id" class="source-card">
+              <div class="source-header">
+                <h3>{{ source.title || '未命名' }}</h3>
+                <button @click="removeSource(source.id)" class="btn-icon" title="删除">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.5"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="source-meta">
+                <span class="badge">{{ source.type }}</span>
+                <span>{{ source.content.length }} 字</span>
+                <span>{{ formatDate(source.timestamp) }}</span>
+              </div>
+              <div class="source-preview">{{ source.content.slice(0, 150) }}...</div>
             </div>
-            <div class="source-meta">
-              <span class="badge">{{ source.type }}</span>
-              <span>{{ source.content.length }} 字</span>
-              <span>{{ formatDate(source.timestamp) }}</span>
-            </div>
-            <div class="source-preview">{{ source.content.slice(0, 150) }}...</div>
           </div>
         </div>
       </section>
@@ -129,15 +130,247 @@
         <div class="section-header">
           <h2 class="section-title">文风分析结果</h2>
           <div class="analysis-badges">
-            <span class="analysis-badge" :class="{ 'ai-badge': library.analysis.analysisMethod === 'AI' }">
-              {{ library.analysis.analysisMethod === 'AI' ? '🤖 AI 分析' : '📊 正则分析' }}
+            <span class="analysis-badge ai-badge">
+              🤖 AI 深度分析
             </span>
-            <span class="analysis-badge">{{ library.analysis.totalWords.toLocaleString() }} 字</span>
+            <span class="analysis-badge">{{ library.analysis.totalWords?.toLocaleString() }} 字</span>
+            <button @click="clearLibrary" class="btn-secondary" style="margin-left: auto;">清空文风库</button>
           </div>
         </div>
 
-        <div class="analysis-content">
-          <button @click="clearLibrary" class="btn-secondary">清空文风库</button>
+        <div class="analysis-display">
+          <!-- 整体概述 -->
+          <div v-if="library.analysis.overallSummary" class="analysis-section summary-section">
+            <h3 class="analysis-section-title">📝 整体文风概述</h3>
+            <p class="summary-text">{{ library.analysis.overallSummary }}</p>
+          </div>
+
+          <!-- 语言风格 -->
+          <div v-if="library.analysis.languageStyle" class="analysis-section">
+            <h3 class="analysis-section-title">💬 语言风格</h3>
+            <div class="analysis-grid">
+              <div class="analysis-card">
+                <div class="card-label">整体语气</div>
+                <div class="card-value">{{ getToneLabel(library.analysis.languageStyle.tone) }}</div>
+                <div v-if="library.analysis.languageStyle.toneDescription" class="card-description">
+                  {{ library.analysis.languageStyle.toneDescription }}
+                </div>
+              </div>
+              <div class="analysis-card">
+                <div class="card-label">平均句长</div>
+                <div class="card-value">{{ library.analysis.languageStyle.avgSentenceLength }} 字/句</div>
+                <div v-if="library.analysis.languageStyle.sentenceLengthStyle" class="card-description">
+                  {{ library.analysis.languageStyle.sentenceLengthStyle }}
+                </div>
+              </div>
+              <div class="analysis-card">
+                <div class="card-label">句式复杂度</div>
+                <div class="card-value">{{ getComplexityLabel(library.analysis.languageStyle.complexity) }}</div>
+                <div v-if="library.analysis.languageStyle.complexityDescription" class="card-description">
+                  {{ library.analysis.languageStyle.complexityDescription }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 叙述视角 -->
+          <div v-if="library.analysis.perspective" class="analysis-section">
+            <h3 class="analysis-section-title">👁 叙述视角</h3>
+            <div class="analysis-card-wide">
+              <div class="card-value">{{ getPerspectiveLabel(library.analysis.perspective.dominant) }}</div>
+              <div v-if="library.analysis.perspective.description" class="card-description">
+                {{ library.analysis.perspective.description }}
+              </div>
+              <div class="perspective-bars">
+                <div class="bar-item">
+                  <span class="bar-label">第一人称</span>
+                  <div class="bar-track">
+                    <div class="bar-fill" :style="{ width: library.analysis.perspective.firstPersonPercent + '%' }"></div>
+                  </div>
+                  <span class="bar-value">{{ library.analysis.perspective.firstPersonPercent }}%</span>
+                </div>
+                <div class="bar-item">
+                  <span class="bar-label">第二人称</span>
+                  <div class="bar-track">
+                    <div class="bar-fill" :style="{ width: library.analysis.perspective.secondPersonPercent + '%' }"></div>
+                  </div>
+                  <span class="bar-value">{{ library.analysis.perspective.secondPersonPercent }}%</span>
+                </div>
+                <div class="bar-item">
+                  <span class="bar-label">第三人称</span>
+                  <div class="bar-track">
+                    <div class="bar-fill" :style="{ width: library.analysis.perspective.thirdPersonPercent + '%' }"></div>
+                  </div>
+                  <span class="bar-value">{{ library.analysis.perspective.thirdPersonPercent }}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 人格特质 -->
+          <div v-if="library.analysis.personality" class="analysis-section">
+            <h3 class="analysis-section-title">🧠 人格特质</h3>
+            <div class="analysis-grid">
+              <div class="analysis-card">
+                <div class="card-label">社交倾向</div>
+                <div class="card-value">{{ library.analysis.personality.extraversion === 'extraverted' ? '外向型' : '内向型' }}</div>
+                <div v-if="library.analysis.personality.extraversionDescription" class="card-description">
+                  {{ library.analysis.personality.extraversionDescription }}
+                </div>
+              </div>
+              <div class="analysis-card">
+                <div class="card-label">思维方式</div>
+                <div class="card-value">{{ library.analysis.personality.openness === 'open' ? '开放创新型' : '传统保守型' }}</div>
+                <div v-if="library.analysis.personality.opennessDescription" class="card-description">
+                  {{ library.analysis.personality.opennessDescription }}
+                </div>
+              </div>
+              <div class="analysis-card">
+                <div class="card-label">行为风格</div>
+                <div class="card-value">{{ library.analysis.personality.conscientiousness === 'conscientious' ? '谨慎计划型' : '灵活随性型' }}</div>
+                <div v-if="library.analysis.personality.conscientiousnessDescription" class="card-description">
+                  {{ library.analysis.personality.conscientiousnessDescription }}
+                </div>
+              </div>
+              <div class="analysis-card">
+                <div class="card-label">人际态度</div>
+                <div class="card-value">{{ library.analysis.personality.agreeableness === 'agreeable' ? '温和包容型' : '坚定主张型' }}</div>
+                <div v-if="library.analysis.personality.agreeablenessDescription" class="card-description">
+                  {{ library.analysis.personality.agreeablenessDescription }}
+                </div>
+              </div>
+              <div class="analysis-card">
+                <div class="card-label">情绪特征</div>
+                <div class="card-value">{{ library.analysis.personality.stability === 'stable' ? '情绪稳定型' : '情感敏锐型' }}</div>
+                <div v-if="library.analysis.personality.stabilityDescription" class="card-description">
+                  {{ library.analysis.personality.stabilityDescription }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 价值观与世界观 -->
+          <div v-if="library.analysis.worldview" class="analysis-section">
+            <h3 class="analysis-section-title">🌍 价值观与世界观</h3>
+            <div class="analysis-grid">
+              <div class="analysis-card">
+                <div class="card-label">人生态度</div>
+                <div class="card-value">{{ getLifeAttitudeLabel(library.analysis.worldview.lifeAttitude) }}</div>
+                <div v-if="library.analysis.worldview.lifeAttitudeDescription" class="card-description">
+                  {{ library.analysis.worldview.lifeAttitudeDescription }}
+                </div>
+              </div>
+              <div class="analysis-card">
+                <div class="card-label">价值取向</div>
+                <div class="card-value">{{ getValueOrientationLabel(library.analysis.worldview.valueOrientation) }}</div>
+                <div v-if="library.analysis.worldview.valueOrientationDescription" class="card-description">
+                  {{ library.analysis.worldview.valueOrientationDescription }}
+                </div>
+              </div>
+              <div class="analysis-card">
+                <div class="card-label">关系观念</div>
+                <div class="card-value">{{ library.analysis.worldview.relationshipView === 'collectivist' ? '集体主义' : '个人主义' }}</div>
+                <div v-if="library.analysis.worldview.relationshipDescription" class="card-description">
+                  {{ library.analysis.worldview.relationshipDescription }}
+                </div>
+              </div>
+              <div class="analysis-card">
+                <div class="card-label">时间观念</div>
+                <div class="card-value">{{ getTimeOrientationLabel(library.analysis.worldview.timeOrientation) }}</div>
+                <div v-if="library.analysis.worldview.timeOrientationDescription" class="card-description">
+                  {{ library.analysis.worldview.timeOrientationDescription }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 兴趣品味 -->
+          <div v-if="library.analysis.culturalTaste" class="analysis-section">
+            <h3 class="analysis-section-title">🎨 文化品味与兴趣</h3>
+            <div class="taste-content">
+              <div v-if="library.analysis.culturalTaste.primaryInterests" class="taste-item">
+                <div class="taste-label">文化兴趣</div>
+                <div class="tags-list">
+                  <span v-for="interest in library.analysis.culturalTaste.primaryInterests" :key="interest" class="tag">
+                    {{ interest }}
+                  </span>
+                </div>
+                <div v-if="library.analysis.culturalTaste.primaryInterestsDescription" class="taste-description">
+                  {{ library.analysis.culturalTaste.primaryInterestsDescription }}
+                </div>
+              </div>
+              <div v-if="library.analysis.culturalTaste.topicPreferences" class="taste-item">
+                <div class="taste-label">话题偏好</div>
+                <div class="tags-list">
+                  <span v-for="topic in library.analysis.culturalTaste.topicPreferences" :key="topic" class="tag">
+                    {{ topic }}
+                  </span>
+                </div>
+                <div v-if="library.analysis.culturalTaste.topicPreferencesDescription" class="taste-description">
+                  {{ library.analysis.culturalTaste.topicPreferencesDescription }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 核心主题 -->
+          <div v-if="library.analysis.themes" class="analysis-section">
+            <h3 class="analysis-section-title">💡 核心主题</h3>
+            <div class="taste-content">
+              <div v-if="library.analysis.themes.coreThemes" class="taste-item">
+                <div class="tags-list">
+                  <span v-for="theme in library.analysis.themes.coreThemes" :key="theme" class="tag tag-primary">
+                    {{ theme }}
+                  </span>
+                </div>
+                <div v-if="library.analysis.themes.themesDescription" class="taste-description">
+                  {{ library.analysis.themes.themesDescription }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 表达习惯 -->
+          <div v-if="library.analysis.expressionHabits" class="analysis-section">
+            <h3 class="analysis-section-title">✍️ 表达习惯</h3>
+            <div class="expression-grid">
+              <div v-if="library.analysis.expressionHabits.openingStyle" class="expression-item">
+                <div class="expression-label">开头方式</div>
+                <div class="expression-value">{{ library.analysis.expressionHabits.openingStyle }}</div>
+                <div v-if="library.analysis.expressionHabits.openingStyleDescription" class="expression-description">
+                  {{ library.analysis.expressionHabits.openingStyleDescription }}
+                </div>
+              </div>
+              <div v-if="library.analysis.expressionHabits.punctuationStyle" class="expression-item">
+                <div class="expression-label">标点风格</div>
+                <div class="expression-description">
+                  {{ library.analysis.expressionHabits.punctuationStyle }}
+                </div>
+              </div>
+              <div v-if="library.analysis.expressionHabits.commonTransitions?.length" class="expression-item">
+                <div class="expression-label">常用转折词</div>
+                <div class="tags-list">
+                  <span v-for="transition in library.analysis.expressionHabits.commonTransitions" :key="transition" class="tag tag-small">
+                    {{ transition }}
+                  </span>
+                </div>
+              </div>
+              <div v-if="library.analysis.expressionHabits.commonPhrases?.length" class="expression-item">
+                <div class="expression-label">常用表达</div>
+                <div class="tags-list">
+                  <span v-for="phrase in library.analysis.expressionHabits.commonPhrases" :key="phrase" class="tag tag-small">
+                    「{{ phrase }}」
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 写作指南 -->
+          <div v-if="library.analysis.writingGuidance" class="analysis-section guidance-section">
+            <h3 class="analysis-section-title">📖 写作指南</h3>
+            <p class="guidance-text">{{ library.analysis.writingGuidance }}</p>
+          </div>
         </div>
       </section>
     </div>
@@ -224,7 +457,7 @@ const handleFileUpload = async (event) => {
   }
 
   library.value = await getStyleLibrary()
-  await reanalyze()
+  // 不自动分析，让用户手动点击
 
   // 重置输入
   event.target.value = ''
@@ -258,7 +491,7 @@ const handleManualAdd = async () => {
   })
 
   library.value = await getStyleLibrary()
-  await reanalyze()
+  // 不自动分析，让用户手动点击
 
   // 重置输入
   manualContent.value = ''
@@ -313,7 +546,7 @@ const handleUrlImport = async () => {
     })
 
     library.value = await getStyleLibrary()
-    await reanalyze()
+    // 不自动分析，让用户手动点击
 
     urlInput.value = ''
     alert(`✅ 导入成功！\n\n标题: ${article.title}\n内容: ${cleanedContent.length} 字`)
@@ -421,7 +654,7 @@ const handleBatchImport = async () => {
 
     // 刷新文风库并重新分析
     library.value = await getStyleLibrary()
-    await reanalyze()
+    // 不自动分析，让用户手动点击
 
     urlInput.value = ''
     alert(`✅ 批量导入完成！\n\n总计: ${links.length} 篇\n成功: ${batchProgress.value.success} 篇\n失败: ${batchProgress.value.failed} 篇`)
@@ -506,7 +739,7 @@ const handleWechatCookieImport = async () => {
 
     // 刷新文风库并重新分析
     library.value = await getStyleLibrary()
-    await reanalyze()
+    // 不自动分析，让用户手动点击
 
     wechatBizInput.value = ''
     wechatCookieInput.value = ''
@@ -579,7 +812,7 @@ const handleWechatHtmlImport = async () => {
 
     // 刷新文风库并重新分析
     library.value = await getStyleLibrary()
-    await reanalyze()
+    // 不自动分析，让用户手动点击
 
     wechatHtmlInput.value = ''
     alert(`✅ 批量导入完成！\n\n总计: ${links.length} 篇\n成功: ${batchProgress.value.success} 篇\n失败: ${batchProgress.value.failed} 篇`)
@@ -597,7 +830,7 @@ const removeSource = async (id) => {
   if (!confirm('确定要删除这条内容吗？')) return
 
   library.value = await removeFromStyleLibrary(id)
-  await reanalyze()
+  // 删除后也不自动重新分析，让用户手动控制
 }
 
 const clearLibrary = async () => {
@@ -607,35 +840,31 @@ const clearLibrary = async () => {
   library.value = { sources: [], analysis: null, totalWords: 0 }
 }
 
-const reanalyze = async (useAI = false) => {
+const reanalyze = async () => {
   if (library.value.sources.length === 0) {
     library.value.analysis = null
     await saveStyleLibrary(library.value)
     return
   }
 
+  // 检查 API Key
+  if (!settings.value?.deepseekApiKey) {
+    alert('请先在设置中配置 DeepSeek API Key')
+    return
+  }
+
   isAnalyzing.value = true
 
   try {
-    if (useAI) {
-      // 使用 AI 分析
-      if (!settings.value?.deepseekApiKey) {
-        alert('请先在设置中配置 DeepSeek API Key')
-        return
-      }
-
-      library.value.analysis = await analyzeStyleWithAI(library.value.sources, settings.value.deepseekApiKey)
-      alert('✅ AI 深度分析完成！\n\n分析结果已保存到文风库。')
-    } else {
-      // 使用正则表达式分析
-      library.value.analysis = analyzeWritingStyle(library.value.sources)
-    }
-
+    // 始终使用 AI 分析
+    library.value.analysis = await analyzeStyleWithAI(library.value.sources, settings.value.deepseekApiKey)
     library.value.totalWords = library.value.analysis.totalWords
     await saveStyleLibrary(library.value)
+
+    alert('✅ AI 深度分析完成！\n\n分析结果已保存到文风库。')
   } catch (error) {
-    console.error('分析失败:', error)
-    alert(`分析失败: ${error.message}`)
+    console.error('AI 分析失败:', error)
+    alert(`AI 分析失败: ${error.message}`)
   } finally {
     isAnalyzing.value = false
   }
@@ -678,6 +907,33 @@ const getPerspectiveLabel = (dominant) => {
     third: '第三人称为主，客观叙述'
   }
   return map[dominant] || dominant
+}
+
+const getLifeAttitudeLabel = (attitude) => {
+  const map = {
+    optimistic: '乐观积极',
+    pessimistic: '悲观审慎',
+    realistic: '现实主义'
+  }
+  return map[attitude] || attitude
+}
+
+const getValueOrientationLabel = (orientation) => {
+  const map = {
+    idealistic: '理想主义',
+    materialistic: '现实主义',
+    balanced: '平衡取向'
+  }
+  return map[orientation] || orientation
+}
+
+const getTimeOrientationLabel = (orientation) => {
+  const map = {
+    present: '活在当下',
+    future: '面向未来',
+    past: '怀旧取向'
+  }
+  return map[orientation] || orientation
 }
 
 </script>
@@ -1105,6 +1361,287 @@ const getPerspectiveLabel = (dominant) => {
   color: var(--color-gray-dark);
   font-weight: 400;
 }
+
+/* 分析提示横幅 */
+.analysis-reminder {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.analysis-reminder svg {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.analysis-reminder span {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+/* 分析结果展示 */
+.analysis-display {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.analysis-section {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.analysis-section-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  margin: 0 0 var(--spacing-lg);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* 概述和指南 */
+.summary-section,
+.guidance-section {
+  background: var(--color-bg-secondary);
+  border-left: 4px solid var(--color-primary);
+}
+
+.summary-text,
+.guidance-text {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* 分析网格 */
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.analysis-card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  transition: all var(--transition-fast);
+}
+
+.analysis-card:hover {
+  box-shadow: var(--shadow-sm);
+  border-color: var(--color-border-hover);
+}
+
+.analysis-card-wide {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+}
+
+.card-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  margin-bottom: var(--spacing-sm);
+  letter-spacing: 0.5px;
+}
+
+.card-value {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.card-description {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-sm);
+}
+
+/* 视角分析条形图 */
+.perspective-bars {
+  margin-top: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.bar-item {
+  display: grid;
+  grid-template-columns: 80px 1fr 60px;
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+.bar-label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.bar-track {
+  position: relative;
+  height: 24px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 0.5s ease;
+  border-radius: var(--radius-sm);
+}
+
+.bar-value {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-align: right;
+}
+
+/* 品味内容 */
+.taste-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.taste-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.taste-label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.taste-description {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+}
+
+/* 标签列表 */
+.tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.tag:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-hover);
+  color: var(--color-text-primary);
+}
+
+.tag-primary {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.tag-small {
+  padding: 4px 10px;
+  font-size: var(--font-size-xs);
+}
+
+/* 表达习惯 */
+.expression-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.expression-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.expression-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.expression-value {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.expression-description {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .analysis-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .expression-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bar-item {
+    grid-template-columns: 60px 1fr 50px;
+  }
+}
+
 
 .wechat-tip {
   padding: var(--spacing-md);
