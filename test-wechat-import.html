@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测试微信公众号批量导入</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #fafafa;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border: 2px solid #000;
+    }
+    h1 {
+      margin: 0 0 20px;
+      font-size: 24px;
+    }
+    .status {
+      padding: 15px;
+      margin: 15px 0;
+      background: #f5f5f5;
+      border-left: 4px solid #0066ff;
+      font-family: monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    button {
+      padding: 12px 24px;
+      background: #000;
+      color: white;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #0066ff;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .progress {
+      margin: 20px 0;
+      padding: 15px;
+      background: #fff8e1;
+      border: 2px solid #ffc107;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 30px;
+      background: white;
+      border: 2px solid #000;
+      margin: 10px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #0066ff;
+      transition: width 0.3s;
+    }
+    .results {
+      margin-top: 20px;
+      padding: 15px;
+      background: #e8f5e9;
+      border: 2px solid #4caf50;
+    }
+    .error {
+      background: #ffebee;
+      border: 2px solid #f44336;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 微信公众号批量导入测试</h1>
+
+    <div>
+      <p><strong>biz:</strong> Mzg3MzE1MjIyNQ==</p>
+      <p><strong>Cookie:</strong> 已配置（隐私保护）</p>
+    </div>
+
+    <div style="margin: 20px 0;">
+      <button id="testBtn" onclick="testImport()">🚀 开始测试</button>
+      <button onclick="clearLog()">🗑️ 清空日志</button>
+    </div>
+
+    <div id="progress" class="progress" style="display: none;">
+      <p><strong>进度:</strong> <span id="progressText">0 / 0</span></p>
+      <div class="progress-bar">
+        <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+      </div>
+      <p><strong>成功:</strong> <span id="successCount">0</span> | <strong>失败:</strong> <span id="failedCount">0</span></p>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div id="results" style="display: none;"></div>
+  </div>
+
+  <script>
+    const BIZ = 'Mzg3MzE1MjIyNQ==';
+    const COOKIE = 'rewardsn=; wxtokenkey=777; ua_id=fKufICv322tNuSrUAAAAAOcysEp-bkZa3KByIggfyv8=; mm_lang=zh_CN; RK=O9UpCu+WF/; ptcz=a7f4954065e4972ee9040d92c0272a7e4f060afcf12fe45f8a31b58e232ef492; pac_uid=0_S4dJdFE1d7dAX; _qimei_uuid42=1920c16130c100f9a18eaeeecf8621c0686a1e2a0a; _qimei_fingerprint=299f8225cc1dde2b31459391578d9884; _qimei_h38=086d9012a18eaeeecf8621c00300000de1920c; _qimei_q36=; pgv_pvid=1742152439774474; pgv_info=ssid=s1745253697674474; uuid=59fa798e4acd847d41c1d54d1c79ca05; wxuin=51991538482818; xid=8e27ae05b5bb866982a59ac8493dbd65; _clck=3873152225|1|fxg|0';
+
+    const CORS_PROXY = 'https://wechat-proxy.lucca-caolu.workers.dev/?url=';
+
+    function log(message) {
+      const statusDiv = document.getElementById('status');
+      const timestamp = new Date().toLocaleTimeString();
+      statusDiv.textContent += `[${timestamp}] ${message}\n`;
+      statusDiv.scrollTop = statusDiv.scrollHeight;
+    }
+
+    function clearLog() {
+      document.getElementById('status').textContent = '';
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('progress').style.display = 'none';
+    }
+
+    function updateProgress(current, total, success, failed) {
+      const progressDiv = document.getElementById('progress');
+      progressDiv.style.display = 'block';
+
+      document.getElementById('progressText').textContent = `${current} / ${total}`;
+      document.getElementById('successCount').textContent = success;
+      document.getElementById('failedCount').textContent = failed;
+
+      const percent = total > 0 ? (current / total) * 100 : 0;
+      document.getElementById('progressFill').style.width = percent + '%';
+    }
+
+    async function testImport() {
+      const testBtn = document.getElementById('testBtn');
+      testBtn.disabled = true;
+      clearLog();
+
+      try {
+        log('🚀 开始测试微信公众号批量导入');
+        log(`📝 biz: ${BIZ}`);
+        log(`🔑 Cookie: 已配置`);
+        log('');
+
+        // 步骤1: 构建 URL
+        const profileUrl = `https://mp.weixin.qq.com/mp/profile_ext?action=home&__biz=${encodeURIComponent(BIZ)}`;
+        log(`📄 构建历史消息页面 URL:`);
+        log(`   ${profileUrl}`);
+        log('');
+
+        // 步骤2: 通过代理获取 HTML
+        log('⏳ 正在通过 CORS 代理获取历史消息页面...');
+        const proxyUrl = CORS_PROXY + encodeURIComponent(profileUrl);
+
+        const response = await fetch(proxyUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Cookie': COOKIE
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const html = await response.text();
+        log(`✅ 成功获取 HTML，长度: ${html.length.toLocaleString()} 字符`);
+        log('');
+
+        // 步骤3: 解析 msgList
+        log('🔍 正在解析 msgList 数据...');
+        const msgListMatch = html.match(/var\s+msgList\s*=\s*'([^']+)'/i) ||
+                            html.match(/var\s+msgList\s*=\s*"([^"]+)"/i);
+
+        if (!msgListMatch) {
+          log('❌ 未找到 msgList 数据');
+          log('');
+          log('💡 可能原因:');
+          log('   1. Cookie 已过期，请重新获取');
+          log('   2. 该公众号需要关注后才能查看');
+          log('   3. 微信返回了登录页面');
+
+          // 保存 HTML 以供调试
+          const blob = new Blob([html], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          log('');
+          log(`📥 已保存 HTML 供调试: <a href="${url}" download="wechat-response.html">下载查看</a>`);
+          return;
+        }
+
+        // 解码 msgList
+        const msgListStr = msgListMatch[1]
+          .replace(/&#39;/g, "'")
+          .replace(/&quot;/g, '"')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>');
+
+        const msgList = JSON.parse(msgListStr);
+
+        log(`✅ 成功解析 msgList`);
+        log(`   消息数量: ${msgList.list ? msgList.list.length : 0}`);
+        log('');
+
+        // 步骤4: 提取文章链接
+        log('📑 正在提取文章链接...');
+        const articleLinks = new Set();
+
+        if (msgList && msgList.list) {
+          msgList.list.forEach((item, index) => {
+            // 主文章
+            if (item.app_msg_ext_info && item.app_msg_ext_info.content_url) {
+              const link = 'https://mp.weixin.qq.com' + item.app_msg_ext_info.content_url.replace(/&amp;/g, '&');
+              articleLinks.add(link);
+            }
+
+            // 多图文
+            if (item.app_msg_ext_info && item.app_msg_ext_info.multi_app_msg_item_list) {
+              item.app_msg_ext_info.multi_app_msg_item_list.forEach(subItem => {
+                if (subItem.content_url) {
+                  const link = 'https://mp.weixin.qq.com' + subItem.content_url.replace(/&amp;/g, '&');
+                  articleLinks.add(link);
+                }
+              });
+            }
+          });
+        }
+
+        const links = Array.from(articleLinks);
+        log(`✅ 提取完成，共找到 ${links.length} 篇文章`);
+        log('');
+
+        // 显示前10个链接作为示例
+        log('📋 文章链接示例（前10个）:');
+        links.slice(0, 10).forEach((link, i) => {
+          log(`   ${i + 1}. ${link.substring(0, 80)}...`);
+        });
+        log('');
+
+        // 步骤5: 显示结果
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.className = 'results';
+        resultsDiv.style.display = 'block';
+        resultsDiv.innerHTML = `
+          <h3>✅ 测试成功！</h3>
+          <p><strong>找到文章数量:</strong> ${links.length} 篇</p>
+          <p><strong>公众号 biz:</strong> ${BIZ}</p>
+          <p><strong>下一步:</strong></p>
+          <ol>
+            <li>在应用中打开"文风库管理"页面</li>
+            <li>选择"方法1：biz + Cookie"</li>
+            <li>填入 biz 和 cookie</li>
+            <li>点击"批量导入"按钮</li>
+          </ol>
+        `;
+
+        log('🎉 测试完成！可以开始批量导入了。');
+
+      } catch (error) {
+        log(`❌ 错误: ${error.message}`);
+        log('');
+        log('📊 错误详情:');
+        log(`   名称: ${error.name}`);
+        log(`   消息: ${error.message}`);
+        if (error.stack) {
+          log(`   堆栈: ${error.stack.split('\n')[0]}`);
+        }
+
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.className = 'results error';
+        resultsDiv.style.display = 'block';
+        resultsDiv.innerHTML = `
+          <h3>❌ 测试失败</h3>
+          <p><strong>错误:</strong> ${error.message}</p>
+          <p><strong>可能原因:</strong></p>
+          <ul>
+            <li>Cookie 已过期</li>
+            <li>CORS 代理无法传递 Cookie</li>
+            <li>网络问题</li>
+          </ul>
+          <p><strong>建议:</strong> 使用"方法2：粘贴 HTML 源代码"</p>
+        `;
+      } finally {
+        testBtn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

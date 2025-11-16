@@ -14,7 +14,7 @@ import NavigationBar from './components/NavigationBar.vue'
 <style>
 #app {
   min-height: 100vh;
-  background-color: var(--color-white);
+  background-color: var(--color-bg-secondary);
 }
 
 main {

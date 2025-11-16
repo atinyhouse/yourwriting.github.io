@@ -26,69 +26,69 @@
 
 <style scoped>
 .navbar {
-  background-color: var(--color-white);
-  border-bottom: 2px solid var(--color-black);
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: var(--z-sticky);
+  box-shadow: var(--shadow-sm);
 }
 
 .nav-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-sm) 0;
+  padding: var(--spacing-md) 0;
 }
 
 .logo h1 {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
   margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  color: var(--color-text-primary);
 }
 
 .nav-links {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-xs);
 }
 
 .nav-links a {
-  padding: 8px 16px;
-  border: 2px solid transparent;
-  border-bottom: 2px solid var(--color-gray);
-  text-transform: uppercase;
-  font-size: 14px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
   font-weight: 500;
-  letter-spacing: 0.5px;
-  transition: all var(--transition-normal);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+  background: transparent;
 }
 
 .nav-links a:hover {
-  border-bottom-color: var(--color-black);
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
 }
 
 .nav-links a.active {
-  border-bottom-color: var(--color-red);
-  font-weight: 700;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 @media (max-width: 768px) {
   .nav-content {
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
     align-items: flex-start;
   }
 
   .nav-links {
     width: 100%;
-    justify-content: space-between;
-    gap: var(--spacing-sm);
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
-  .nav-links a {
-    font-size: 12px;
-    padding: 6px 12px;
+  .logo h1 {
+    font-size: var(--font-size-base);
   }
 }
 </style>
