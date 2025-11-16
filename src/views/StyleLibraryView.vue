@@ -42,6 +42,40 @@
             </button>
           </div>
 
+          <!-- 微信公众号HTML源码导入 -->
+          <div class="wechat-html-import mt-md">
+            <details>
+              <summary style="cursor: pointer; font-weight: 600; margin-bottom: var(--spacing-sm);">
+                🔧 微信公众号批量导入（推荐）
+              </summary>
+              <div class="wechat-import-content">
+                <p style="margin-bottom: var(--spacing-sm); font-size: 14px; color: var(--color-gray-dark);">
+                  由于微信限制，推荐使用此方法批量导入公众号历史文章：
+                </p>
+                <ol style="margin-left: 20px; font-size: 13px; line-height: 1.8; color: var(--color-gray-dark);">
+                  <li>在微信中打开任一公众号文章</li>
+                  <li>点击右上角 "..." → 查看历史消息</li>
+                  <li>在历史消息页面，右键 → 查看网页源代码（或审查元素）</li>
+                  <li>全选并复制整个 HTML 代码</li>
+                  <li>粘贴到下方文本框</li>
+                </ol>
+                <textarea
+                  v-model="wechatHtmlInput"
+                  placeholder="粘贴公众号历史页面的 HTML 源代码..."
+                  rows="6"
+                  class="mt-sm"
+                  style="font-family: monospace; font-size: 12px;"
+                ></textarea>
+                <button
+                  @click="handleWechatHtmlImport"
+                  class="mt-sm"
+                  :disabled="!wechatHtmlInput.trim() || isLoadingUrl"
+                >
+                  {{ isLoadingUrl ? '正在解析...' : '解析并批量导入' }}
+                </button>
+              </div>
+            </details>
+          </div>
 
           <!-- 批量导入进度 -->
           <div v-if="batchProgress.show" class="batch-progress mt-md">
@@ -290,6 +324,7 @@ const library = ref({ sources: [], analysis: null, totalWords: 0 })
 const manualContent = ref('')
 const manualTitle = ref('')
 const urlInput = ref('')
+const wechatHtmlInput = ref('') // 新增：微信HTML源码输入
 const isLoadingUrl = ref(false)
 const fileInput = ref(null)
 
@@ -545,6 +580,78 @@ const handleBatchImport = async () => {
   } catch (error) {
     console.error('批量导入失败:', error)
     alert(`批量导入失败: ${error.message}`)
+  } finally {
+    isLoadingUrl.value = false
+  }
+}
+
+// 新增：微信HTML源码导入处理函数
+const handleWechatHtmlImport = async () => {
+  if (!wechatHtmlInput.value.trim()) return
+
+  isLoadingUrl.value = true
+  batchProgress.value = {
+    show: true,
+    current: 0,
+    total: 0,
+    currentUrl: '',
+    success: 0,
+    failed: 0
+  }
+
+  try {
+    console.log('开始解析微信公众号HTML源码...')
+    const html = wechatHtmlInput.value.trim()
+
+    // 直接调用 extractArticleLinks，传入 HTML 源码
+    const links = await extractArticleLinks(html)
+
+    if (links.length === 0) {
+      alert('未能从HTML中提取到文章链接。\n\n请确保：\n1. 粘贴的是公众号"历史消息"页面的完整HTML源代码\n2. HTML包含 msgList 数据\n\n💡 提示：打开控制台（F12）查看详细日志')
+      return
+    }
+
+    const proceed = confirm(`成功找到 ${links.length} 篇文章！\n\n确定要全部导入吗？\n\n注意：这可能需要 ${Math.ceil(links.length / 60)} 到 ${Math.ceil(links.length / 30)} 分钟。`)
+    if (!proceed) {
+      return
+    }
+
+    batchProgress.value.total = links.length
+
+    // 批量提取文章内容
+    await batchExtractArticles(links, (progress) => {
+      batchProgress.value.current = progress.current
+      batchProgress.value.currentUrl = progress.url
+
+      if (progress.status === 'success') {
+        batchProgress.value.success++
+
+        // 立即添加到文风库
+        const cleanedContent = cleanContent(progress.article.content)
+        if (cleanedContent && cleanedContent.length >= 200) {
+          addToStyleLibrary({
+            type: 'url',
+            title: progress.article.title,
+            content: cleanedContent,
+            url: progress.url
+          })
+        }
+      } else if (progress.status === 'failed') {
+        batchProgress.value.failed++
+      }
+    })
+
+    // 刷新文风库并重新分析
+    library.value = await getStyleLibrary()
+    await reanalyze()
+
+    wechatHtmlInput.value = ''
+    alert(`✅ 批量导入完成！\n\n总计: ${links.length} 篇\n成功: ${batchProgress.value.success} 篇\n失败: ${batchProgress.value.failed} 篇`)
+
+    batchProgress.value.show = false
+  } catch (error) {
+    console.error('HTML解析失败:', error)
+    alert(`解析失败: ${error.message}\n\n💡 打开浏览器控制台（F12）查看详细错误信息`)
   } finally {
     isLoadingUrl.value = false
   }
