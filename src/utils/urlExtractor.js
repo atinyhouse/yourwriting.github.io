@@ -267,38 +267,69 @@ export const extractBizFromUrl = (url) => {
 // 从HTML源代码中提取 biz 参数
 export const extractBizFromHTML = async (url) => {
   try {
-    console.log('正在从HTML源代码中提取 biz 参数...')
+    console.log('🔍 正在从HTML源代码中提取 biz 参数...')
+    console.log('URL:', url)
 
     const html = await fetchWithCORS(url)
 
+    console.log('✅ HTML 获取成功，长度:', html.length)
+    console.log('HTML 前500字符:', html.slice(0, 500))
+
     // 方法1: 从 URL 参数中提取
+    console.log('尝试方法1：从__biz参数提取...')
     const bizMatch1 = html.match(/__biz=([^&"'\s]+)/i)
     if (bizMatch1) {
       const biz = decodeURIComponent(bizMatch1[1])
-      console.log('✅ 从__biz参数提取成功:', biz)
+      console.log('✅ 方法1成功，从__biz参数提取到:', biz)
       return biz
+    } else {
+      console.log('❌ 方法1失败：未找到__biz参数')
     }
 
     // 方法2: 从 var biz = 变量中提取
+    console.log('尝试方法2：从var biz变量提取...')
     const bizMatch2 = html.match(/var\s+biz\s*=\s*["']([^"']+)["']/i)
     if (bizMatch2) {
       const biz = bizMatch2[1]
-      console.log('✅ 从var biz变量提取成功:', biz)
+      console.log('✅ 方法2成功，从var biz变量提取到:', biz)
       return biz
+    } else {
+      console.log('❌ 方法2失败：未找到var biz变量')
     }
 
     // 方法3: 从 window.biz 中提取
+    console.log('尝试方法3：从window.biz提取...')
     const bizMatch3 = html.match(/window\.biz\s*=\s*["']([^"']+)["']/i)
     if (bizMatch3) {
       const biz = bizMatch3[1]
-      console.log('✅ 从window.biz提取成功:', biz)
+      console.log('✅ 方法3成功，从window.biz提取到:', biz)
       return biz
+    } else {
+      console.log('❌ 方法3失败：未找到window.biz')
     }
 
-    console.error('❌ 无法从HTML中找到biz参数')
-    throw new Error('无法从HTML源代码中提取 biz 参数')
+    // 方法4: 更宽松的匹配（查找任何看起来像biz的长字符串）
+    console.log('尝试方法4：宽松匹配任何biz格式...')
+    const bizMatch4 = html.match(/biz["\s:=]+([A-Za-z0-9+/=]{20,})/i)
+    if (bizMatch4) {
+      const biz = bizMatch4[1]
+      console.log('✅ 方法4成功，宽松匹配到:', biz)
+      return biz
+    } else {
+      console.log('❌ 方法4失败：未找到任何biz格式')
+    }
+
+    console.error('❌ 所有方法都失败，无法从HTML中找到biz参数')
+    console.log('HTML 包含 "__biz" 关键词:', html.includes('__biz'))
+    console.log('HTML 包含 "var biz" 关键词:', html.includes('var biz'))
+
+    throw new Error('无法从HTML源代码中提取 biz 参数。请检查链接是否正确，或尝试使用包含完整 __biz 参数的链接。')
   } catch (error) {
-    console.error('提取 biz 失败:', error)
+    console.error('❌ 提取 biz 失败，详细错误:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    })
     throw error
   }
 }
@@ -371,16 +402,27 @@ export const fetchAllArticlesFromSingleUrl = async (articleUrl) => {
 
     console.log('✅ 成功获取历史消息页面，HTML长度:', html.length)
 
+    // 调试：保存 HTML 片段用于检查
+    console.log('HTML 前500字符:', html.slice(0, 500))
+    console.log('搜索 msgList 关键词...')
+
     // 步骤4: 从历史消息页面提取所有文章链接
     const doc = new DOMParser().parseFromString(html, 'text/html')
     const articleLinks = new Set()
 
     // 方法1: 从 msgList 数据中提取（最可靠）
+    // 尝试多种匹配模式
     const msgListMatch = html.match(/var\s+msgList\s*=\s*'([^']+)'/i) ||
-                        html.match(/var\s+msgList\s*=\s*"([^"]+)"/i)
+                        html.match(/var\s+msgList\s*=\s*"([^"]+)"/i) ||
+                        html.match(/msgList\s*:\s*'([^']+)'/i) ||
+                        html.match(/msgList\s*:\s*"([^"]+)"/i)
+
+    console.log('msgList 正则匹配结果:', msgListMatch ? '找到' : '未找到')
 
     if (msgListMatch) {
       try {
+        console.log('原始 msgListStr 长度:', msgListMatch[1].length)
+
         const msgListStr = msgListMatch[1]
           .replace(/&#39;/g, "'")
           .replace(/&quot;/g, '"')
@@ -388,31 +430,64 @@ export const fetchAllArticlesFromSingleUrl = async (articleUrl) => {
           .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>')
 
+        console.log('解码后 msgListStr 前200字符:', msgListStr.slice(0, 200))
+
         const msgList = JSON.parse(msgListStr)
+
+        console.log('msgList 解析成功，结构:', {
+          hasListProperty: !!msgList.list,
+          listLength: msgList.list?.length || 0,
+          keys: Object.keys(msgList)
+        })
 
         if (msgList && msgList.list) {
           console.log('✅ 成功解析 msgList，找到', msgList.list.length, '条消息')
 
-          msgList.list.forEach(item => {
+          msgList.list.forEach((item, index) => {
+            console.log(`处理消息 ${index + 1}/${msgList.list.length}`)
+
             // 主文章
             if (item.app_msg_ext_info && item.app_msg_ext_info.content_url) {
               const link = 'https://mp.weixin.qq.com' + item.app_msg_ext_info.content_url.replace(/&amp;/g, '&')
               articleLinks.add(link)
+              console.log(`  ✅ 主文章: ${item.app_msg_ext_info.title || '无标题'}`)
             }
 
             // 多图文消息（一次推送多篇文章）
             if (item.app_msg_ext_info && item.app_msg_ext_info.multi_app_msg_item_list) {
-              item.app_msg_ext_info.multi_app_msg_item_list.forEach(subItem => {
+              console.log(`  📑 多图文消息，包含 ${item.app_msg_ext_info.multi_app_msg_item_list.length} 篇文章`)
+              item.app_msg_ext_info.multi_app_msg_item_list.forEach((subItem, subIndex) => {
                 if (subItem.content_url) {
                   const link = 'https://mp.weixin.qq.com' + subItem.content_url.replace(/&amp;/g, '&')
                   articleLinks.add(link)
+                  console.log(`    ✅ 子文章 ${subIndex + 1}: ${subItem.title || '无标题'}`)
                 }
               })
             }
           })
+        } else {
+          console.warn('⚠️ msgList 解析成功但没有 list 属性')
         }
       } catch (e) {
-        console.error('解析 msgList 失败:', e)
+        console.error('❌ 解析 msgList 失败，详细错误:', {
+          name: e.name,
+          message: e.message,
+          stack: e.stack
+        })
+        console.log('msgListStr 内容（前500字符）:', msgListMatch[1].slice(0, 500))
+      }
+    } else {
+      console.warn('⚠️ 未找到 msgList 变量，尝试其他方法...')
+
+      // 额外调试：检查 HTML 中是否有其他可能的数据源
+      if (html.includes('appmsg')) {
+        console.log('✅ HTML 中包含 appmsg 关键词')
+      }
+      if (html.includes('content_url')) {
+        console.log('✅ HTML 中包含 content_url 关键词')
+      }
+      if (html.includes('__biz')) {
+        console.log('✅ HTML 中包含 __biz 关键词')
       }
     }
 
@@ -437,20 +512,44 @@ export const fetchAllArticlesFromSingleUrl = async (articleUrl) => {
     })
 
     const links = Array.from(articleLinks)
-    console.log(`🎉 成功提取 ${links.length} 篇文章链接`)
+    console.log(`🎉 提取完成，共找到 ${links.length} 篇文章链接`)
 
     if (links.length === 0) {
-      throw new Error(`未能从公众号历史页面提取到文章链接
+      // 提供更详细的诊断信息
+      const diagnosticInfo = []
 
-可能原因：
-1. 该公众号没有历史文章
-2. 需要先关注公众号才能查看历史消息
-3. 微信限制了访问（请稍后重试）
+      if (!msgListMatch) {
+        diagnosticInfo.push('❌ 未找到 msgList 数据结构')
+      }
 
-💡 建议：
-- 确认该公众号有已发布的文章
-- 尝试在微信中关注该公众号后重试
-- 或使用"手动复制粘贴"方法`)
+      const linkCount = doc.querySelectorAll('a[href]').length
+      diagnosticInfo.push(`🔗 页面包含 ${linkCount} 个链接`)
+
+      if (html.length < 10000) {
+        diagnosticInfo.push(`⚠️ HTML 内容异常短（${html.length} 字符）`)
+      }
+
+      const diagString = diagnosticInfo.join('\n')
+
+      throw new Error(`❌ 未能从公众号历史页面提取到文章链接
+
+【诊断信息】
+${diagString}
+
+【可能原因】
+1. 该公众号需要关注后才能查看历史消息
+2. 该公众号尚未发布任何文章
+3. 微信服务器返回了登录页面或验证页面
+4. CORS 代理访问受限
+
+【解决方案】
+1. 在微信中关注该公众号，然后重试
+2. 确认该公众号确实有已发布的文章
+3. 稍后再试（可能是临时限制）
+4. 使用"手动粘贴内容"方式添加单篇文章
+
+【调试建议】
+打开浏览器控制台（F12）查看详细日志`)
     }
 
     return {
