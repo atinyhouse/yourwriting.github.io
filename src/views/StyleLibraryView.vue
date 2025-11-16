@@ -1,204 +1,95 @@
 <template>
   <div class="style-library-view">
     <div class="container">
-      <h1>文风库管理</h1>
-      <p class="subtitle">构建您的个人文风数据库</p>
+      <header class="page-header">
+        <h1>文风库管理</h1>
+        <p class="subtitle">构建您的个人文风数据库</p>
+      </header>
 
       <!-- 添加内容 -->
-      <div class="section accent-red">
-        <h2>添加内容</h2>
+      <section class="content-section">
+        <h2 class="section-title">添加内容</h2>
 
-        <!-- 文档上传 -->
-        <div class="upload-section">
-          <h3>上传文档</h3>
-          <p>支持 .txt 和 .md 格式</p>
-          <input
-            type="file"
-            ref="fileInput"
-            @change="handleFileUpload"
-            accept=".txt,.md"
-            multiple
-            style="display: none"
-          />
-          <button @click="$refs.fileInput.click()">选择文件</button>
-        </div>
+        <div class="input-cards">
+          <!-- 文档上传 -->
+          <div class="input-card">
+            <div class="card-icon">📄</div>
+            <h3>上传文档</h3>
+            <p>支持 .txt 和 .md 格式</p>
+            <input
+              type="file"
+              ref="fileInput"
+              @change="handleFileUpload"
+              accept=".txt,.md"
+              multiple
+              style="display: none"
+            />
+            <button @click="$refs.fileInput.click()" class="card-button">选择文件</button>
+          </div>
 
-        <!-- URL 导入 -->
-        <div class="url-input">
-          <h3>从链接导入</h3>
-          <p>✨ 支持单篇文章或整个博客/网站批量导入</p>
-          <input
-            v-model="urlInput"
-            type="url"
-            placeholder="粘贴链接：文章链接 或 博客首页"
-            class="mt-sm"
-          />
-          <div class="button-group mt-sm">
-            <button @click="handleUrlImport" :disabled="!urlInput.trim() || isLoadingUrl">
-              {{ isLoadingUrl ? '正在提取...' : '导入单篇文章' }}
+          <!-- URL 导入 -->
+          <div class="input-card">
+            <div class="card-icon">🔗</div>
+            <h3>从链接导入</h3>
+            <p>粘贴文章 URL 自动提取</p>
+            <input
+              v-model="urlInput"
+              type="url"
+              placeholder="https://..."
+              class="card-input"
+            />
+            <button
+              @click="handleUrlImport"
+              :disabled="!urlInput.trim() || isLoadingUrl"
+              class="card-button"
+            >
+              {{ isLoadingUrl ? '提取中...' : '导入文章' }}
             </button>
-            <button @click="handleBatchImport" class="secondary" :disabled="!urlInput.trim() || isLoadingUrl">
-              {{ isLoadingUrl ? '批量提取中...' : '批量爬取网站' }}
+          </div>
+
+          <!-- 手动输入 -->
+          <div class="input-card full-width">
+            <div class="card-icon">✍️</div>
+            <h3>直接粘贴内容</h3>
+            <p>复制粘贴您的文章内容</p>
+            <input
+              v-model="manualTitle"
+              type="text"
+              placeholder="标题（可选）"
+              class="card-input"
+            />
+            <textarea
+              v-model="manualContent"
+              placeholder="粘贴您的文章内容..."
+              rows="6"
+              class="card-textarea"
+            ></textarea>
+            <button
+              @click="handleManualAdd"
+              :disabled="!manualContent.trim()"
+              class="card-button"
+            >
+              添加到文风库
             </button>
           </div>
-
-          <!-- 微信公众号批量导入 -->
-          <div class="wechat-html-import mt-md">
-            <details open>
-              <summary style="cursor: pointer; font-weight: 600; margin-bottom: var(--spacing-sm);">
-                🔧 微信公众号批量导入
-              </summary>
-              <div class="wechat-import-content">
-                <!-- 方法选择 -->
-                <div style="display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-md);">
-                  <button
-                    @click="wechatImportMethod = 'cookie'"
-                    :class="['method-toggle-btn', { active: wechatImportMethod === 'cookie' }]"
-                    style="flex: 1; padding: 10px; font-size: 13px; font-weight: 600; border: 2px solid var(--color-gray); background: white; cursor: pointer;"
-                  >
-                    🔑 方法1：biz + Cookie（推荐）
-                  </button>
-                  <button
-                    @click="wechatImportMethod = 'html'"
-                    :class="['method-toggle-btn', { active: wechatImportMethod === 'html' }]"
-                    style="flex: 1; padding: 10px; font-size: 13px; font-weight: 600; border: 2px solid var(--color-gray); background: white; cursor: pointer;"
-                  >
-                    📄 方法2：粘贴 HTML
-                  </button>
-                </div>
-
-                <!-- 方法1：biz + Cookie -->
-                <div v-if="wechatImportMethod === 'cookie'" class="import-method">
-                  <p style="margin-bottom: var(--spacing-sm); font-size: 14px; color: var(--color-gray-dark); font-weight: 600;">
-                    📋 操作步骤（6步）
-                  </p>
-                  <ol style="margin-left: 20px; font-size: 13px; line-height: 1.8; color: var(--color-gray-dark); margin-bottom: var(--spacing-md);">
-                    <li><strong>在微信中</strong>打开任一公众号文章</li>
-                    <li>按 <strong>F12</strong> 打开开发者工具 → 切换到 <strong>Network</strong>（网络）标签</li>
-                    <li><strong>刷新页面</strong>，找到任意一个请求（如 appmsgreport）</li>
-                    <li>在请求详情中，复制 <code>__biz</code> 参数的值（例如：Mzg3MzE1MjIyNQ==）</li>
-                    <li>复制请求头中的 <code>cookie</code> 字段的完整内容</li>
-                    <li>粘贴到下方输入框</li>
-                  </ol>
-
-                  <div style="background: #fff8e1; border: 2px solid #ffc107; padding: var(--spacing-sm); margin-bottom: var(--spacing-md); font-size: 13px; line-height: 1.6;">
-                    <strong>⚠️ 隐私提示</strong><br>
-                    Cookie 包含你的登录信息，仅在本地浏览器使用，不会上传到任何服务器。但请注意不要泄露给他人。
-                  </div>
-
-                  <label style="display: block; margin-bottom: var(--spacing-xs); font-size: 13px; font-weight: 600; color: var(--color-gray-dark);">
-                    biz 参数：
-                  </label>
-                  <input
-                    v-model="wechatBizInput"
-                    type="text"
-                    placeholder="例如：Mzg3MzE1MjIyNQ=="
-                    class="mt-xs"
-                    style="width: 100%; margin-bottom: var(--spacing-sm);"
-                  />
-
-                  <label style="display: block; margin-bottom: var(--spacing-xs); font-size: 13px; font-weight: 600; color: var(--color-gray-dark);">
-                    Cookie：
-                  </label>
-                  <textarea
-                    v-model="wechatCookieInput"
-                    placeholder="粘贴完整的 cookie 字符串...&#10;&#10;例如：rewardsn=; wxtokenkey=777; ua_id=xxx; wxuin=xxx; ..."
-                    rows="4"
-                    class="mt-xs"
-                    style="width: 100%; font-family: monospace; font-size: 12px; margin-bottom: var(--spacing-sm);"
-                  ></textarea>
-
-                  <button
-                    @click="handleWechatCookieImport"
-                    class="mt-sm"
-                    :disabled="!wechatBizInput.trim() || !wechatCookieInput.trim() || isLoadingUrl"
-                    style="width: 100%; padding: 12px; font-size: 14px; font-weight: 600;"
-                  >
-                    {{ isLoadingUrl ? '正在获取并批量导入...' : '🚀 批量导入整个公众号' }}
-                  </button>
-                </div>
-
-                <!-- 方法2：HTML 源代码 -->
-                <div v-if="wechatImportMethod === 'html'" class="import-method">
-                  <p style="margin-bottom: var(--spacing-sm); font-size: 14px; color: var(--color-gray-dark); font-weight: 600;">
-                    📋 操作步骤（5步）
-                  </p>
-                  <ol style="margin-left: 20px; font-size: 13px; line-height: 1.8; color: var(--color-gray-dark); margin-bottom: var(--spacing-md);">
-                    <li><strong>在微信中</strong>打开任一公众号文章</li>
-                    <li>点击右上角 <strong>"..."</strong> → 选择 <strong>"查看历史消息"</strong></li>
-                    <li>在历史消息页面，<strong>右键</strong> → 选择 <strong>"查看网页源代码"</strong>（或按 Ctrl+U / Cmd+U）</li>
-                    <li><strong>全选</strong>（Ctrl+A / Cmd+A）并<strong>复制</strong>整个 HTML 代码</li>
-                    <li><strong>粘贴</strong>到下方文本框，点击"批量导入"按钮</li>
-                  </ol>
-
-                  <textarea
-                    v-model="wechatHtmlInput"
-                    placeholder="粘贴公众号历史页面的完整 HTML 源代码...&#10;&#10;提示：HTML 通常以 <!DOCTYPE html> 或 <html> 开头"
-                    rows="8"
-                    class="mt-sm"
-                    style="width: 100%; font-family: monospace; font-size: 12px; line-height: 1.4;"
-                  ></textarea>
-                  <button
-                    @click="handleWechatHtmlImport"
-                    class="mt-sm"
-                    :disabled="!wechatHtmlInput.trim() || isLoadingUrl"
-                    style="width: 100%; padding: 12px; font-size: 14px; font-weight: 600;"
-                  >
-                    {{ isLoadingUrl ? '正在解析并批量导入...' : '🚀 批量导入整个公众号' }}
-                  </button>
-                </div>
-              </div>
-            </details>
-          </div>
-
-          <!-- 批量导入进度 -->
-          <div v-if="batchProgress.show" class="batch-progress mt-md">
-            <h4>批量导入进度: {{ batchProgress.current }} / {{ batchProgress.total }}</h4>
-            <div class="progress-bar">
-              <div class="progress-fill" :style="{ width: batchProgressPercent + '%' }"></div>
-            </div>
-            <p class="current-url">{{ batchProgress.currentUrl }}</p>
-            <p class="stats">
-              成功: {{ batchProgress.success }} | 失败: {{ batchProgress.failed }}
-            </p>
-          </div>
         </div>
-
-        <!-- 手动输入 -->
-        <div class="manual-input">
-          <h3>或直接粘贴内容</h3>
-          <textarea
-            v-model="manualContent"
-            placeholder="粘贴您的文章内容..."
-            rows="8"
-          ></textarea>
-          <input
-            v-model="manualTitle"
-            type="text"
-            placeholder="标题（可选）"
-            class="mt-sm"
-          />
-          <button @click="handleManualAdd" class="mt-sm" :disabled="!manualContent.trim()">
-            添加到文风库
-          </button>
-        </div>
-      </div>
+      </section>
 
       <!-- 已导入内容 -->
-      <div class="section">
+      <section class="content-section">
         <div class="section-header">
-          <h2>已导入内容</h2>
+          <h2 class="section-title">已导入内容</h2>
           <div class="button-group">
             <button
               @click="() => reanalyze(false)"
-              class="secondary"
+              class="btn-secondary"
               :disabled="library.sources.length === 0 || isAnalyzing"
             >
-              {{ isAnalyzing ? '分析中...' : '快速分析（正则）' }}
+              {{ isAnalyzing ? '分析中...' : '快速分析' }}
             </button>
             <button
               @click="() => reanalyze(true)"
-              class="accent"
+              class="btn-primary"
               :disabled="library.sources.length === 0 || isAnalyzing || !settings?.deepseekApiKey"
               :title="!settings?.deepseekApiKey ? '请先在设置中配置 DeepSeek API Key' : ''"
             >
@@ -208,194 +99,47 @@
         </div>
 
         <div v-if="library.sources.length === 0" class="empty-state">
-          <p>还没有内容，请先添加您的文章来构建文风库</p>
+          <div class="empty-icon">📚</div>
+          <p>还没有内容</p>
+          <span>请先添加您的文章来构建文风库</span>
         </div>
 
-        <div v-else class="sources-list">
-          <div v-for="source in library.sources" :key="source.id" class="source-item card">
+        <div v-else class="sources-grid">
+          <div v-for="source in library.sources" :key="source.id" class="source-card">
             <div class="source-header">
               <h3>{{ source.title || '未命名' }}</h3>
-              <button @click="removeSource(source.id)" class="delete-btn">删除</button>
+              <button @click="removeSource(source.id)" class="btn-icon" title="删除">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+              </button>
             </div>
             <div class="source-meta">
               <span class="badge">{{ source.type }}</span>
               <span>{{ source.content.length }} 字</span>
               <span>{{ formatDate(source.timestamp) }}</span>
             </div>
-            <div class="source-preview">
-              {{ source.content.slice(0, 150) }}...
-            </div>
+            <div class="source-preview">{{ source.content.slice(0, 150) }}...</div>
           </div>
         </div>
-      </div>
+      </section>
 
       <!-- 文风分析结果 -->
-      <div v-if="library.analysis" class="section accent-blue">
+      <section v-if="library.analysis" class="content-section">
         <div class="section-header">
-          <h2>文风分析结果</h2>
-          <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
-            <span
-              class="data-badge"
-              :style="{
-                backgroundColor: library.analysis.analysisMethod === 'AI' ? '#e5f2ff' : '#f5f5f5',
-                borderColor: library.analysis.analysisMethod === 'AI' ? '#0066ff' : '#ccc'
-              }"
-            >
-              {{ library.analysis.analysisMethod === 'AI' ? '🤖 AI 深度分析' : '📊 正则分析' }}
+          <h2 class="section-title">文风分析结果</h2>
+          <div class="analysis-badges">
+            <span class="analysis-badge" :class="{ 'ai-badge': library.analysis.analysisMethod === 'AI' }">
+              {{ library.analysis.analysisMethod === 'AI' ? '🤖 AI 分析' : '📊 正则分析' }}
             </span>
-            <span class="data-badge">基于 {{ library.analysis.totalWords.toLocaleString() }} 字分析</span>
+            <span class="analysis-badge">{{ library.analysis.totalWords.toLocaleString() }} 字</span>
           </div>
         </div>
 
-        <!-- 1. 语言风格 -->
-        <div class="analysis-category">
-          <h3>1️⃣ 语言风格</h3>
-          <div class="style-grid">
-            <div class="style-card">
-              <div class="label">整体语气</div>
-              <div class="value-large">{{ getToneLabel(library.analysis.tone) }}</div>
-            </div>
-            <div class="style-card">
-              <div class="label">平均句长</div>
-              <div class="value-large">{{ library.analysis.avgSentenceLength }} 字</div>
-              <div class="hint">{{ getSentenceLengthHint(library.analysis.avgSentenceLength) }}</div>
-            </div>
-          </div>
-
-          <!-- 句式复杂度 -->
-          <div v-if="library.analysis.complexity" class="complexity-section mt-sm">
-            <div class="label">句式复杂度：{{ getComplexityLabel(library.analysis.complexity.diversity) }}</div>
-            <div class="complexity-bars">
-              <div class="complexity-bar">
-                <div class="bar-label">简单句</div>
-                <div class="bar-container">
-                  <div class="bar-fill" :style="{ width: library.analysis.complexity.simple + '%' }"></div>
-                  <span class="bar-value">{{ library.analysis.complexity.simple }}%</span>
-                </div>
-              </div>
-              <div class="complexity-bar">
-                <div class="bar-label">复合句</div>
-                <div class="bar-container">
-                  <div class="bar-fill" :style="{ width: library.analysis.complexity.compound + '%' }"></div>
-                  <span class="bar-value">{{ library.analysis.complexity.compound }}%</span>
-                </div>
-              </div>
-              <div class="complexity-bar">
-                <div class="bar-label">复杂句</div>
-                <div class="bar-container">
-                  <div class="bar-fill" :style="{ width: library.analysis.complexity.complex + '%' }"></div>
-                  <span class="bar-value">{{ library.analysis.complexity.complex }}%</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="analysis-content">
+          <button @click="clearLibrary" class="btn-secondary">清空文风库</button>
         </div>
-
-        <!-- 2. 叙述视角 -->
-        <div v-if="library.analysis.perspective" class="analysis-category mt-md">
-          <h3>2️⃣ 叙述视角</h3>
-          <div class="perspective-section">
-            <div class="perspective-main">
-              {{ getPerspectiveLabel(library.analysis.perspective.dominant) }}
-            </div>
-            <div class="perspective-distribution">
-              <div class="person-item">
-                <span class="person-label">第一人称（我）</span>
-                <span class="person-value">{{ library.analysis.perspective.firstPerson }}%</span>
-              </div>
-              <div class="person-item">
-                <span class="person-label">第二人称（你）</span>
-                <span class="person-value">{{ library.analysis.perspective.secondPerson }}%</span>
-              </div>
-              <div class="person-item">
-                <span class="person-label">第三人称（他）</span>
-                <span class="person-value">{{ library.analysis.perspective.thirdPerson }}%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. 行文习惯 -->
-        <div v-if="library.analysis.openingPatterns || library.analysis.transitions" class="analysis-category mt-md">
-          <h3>3️⃣ 行文习惯</h3>
-
-          <!-- 开头方式 -->
-          <div v-if="library.analysis.openingPatterns" class="opening-section">
-            <div class="label">开头方式</div>
-            <div class="opening-stats">
-              <div class="opening-item">
-                <span class="opening-type">问句开头</span>
-                <span class="opening-count">{{ library.analysis.openingPatterns.patterns.question }} 次</span>
-              </div>
-              <div class="opening-item">
-                <span class="opening-type">故事开头</span>
-                <span class="opening-count">{{ library.analysis.openingPatterns.patterns.story }} 次</span>
-              </div>
-              <div class="opening-item">
-                <span class="opening-type">观点开头</span>
-                <span class="opening-count">{{ library.analysis.openingPatterns.patterns.statement }} 次</span>
-              </div>
-            </div>
-            <!-- 示例 -->
-            <div v-if="library.analysis.openingPatterns.examples.question.length > 0 ||
-                       library.analysis.openingPatterns.examples.story.length > 0 ||
-                       library.analysis.openingPatterns.examples.statement.length > 0"
-                 class="opening-examples mt-sm">
-              <div class="example-label">开头示例：</div>
-              <div v-if="library.analysis.openingPatterns.examples.question[0]" class="example-text">
-                "{{ library.analysis.openingPatterns.examples.question[0] }}..."
-              </div>
-              <div v-else-if="library.analysis.openingPatterns.examples.story[0]" class="example-text">
-                "{{ library.analysis.openingPatterns.examples.story[0] }}..."
-              </div>
-              <div v-else-if="library.analysis.openingPatterns.examples.statement[0]" class="example-text">
-                "{{ library.analysis.openingPatterns.examples.statement[0] }}..."
-              </div>
-            </div>
-          </div>
-
-          <!-- 常用转折词 -->
-          <div v-if="library.analysis.transitions && library.analysis.transitions.length > 0" class="transitions-section mt-sm">
-            <div class="label">常用转折词</div>
-            <div class="transitions">
-              <span v-for="[word, count] in library.analysis.transitions.slice(0, 5)"
-                    :key="word"
-                    class="transition-tag">
-                {{ word }} <span class="count">({{ count }})</span>
-              </span>
-            </div>
-          </div>
-
-          <!-- 主题关键词 -->
-          <div class="keywords-section mt-sm">
-            <div class="label">主题关键词</div>
-            <div class="keywords">
-              <span v-for="kw in library.analysis.keywords.slice(0, 10)"
-                    :key="kw.word"
-                    class="keyword-tag">
-                {{ kw.word }}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 4. 表达特征 -->
-        <div class="analysis-category mt-md">
-          <h3>4️⃣ 表达特征</h3>
-          <div class="phrases-section">
-            <div class="label">常用表达方式</div>
-            <div class="phrases">
-              <span v-for="phrase in library.analysis.commonPhrases.slice(0, 12)"
-                    :key="phrase.phrase"
-                    class="phrase-tag">
-                "{{ phrase.phrase }}"
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <button @click="clearLibrary" class="mt-md secondary">清空文风库</button>
-      </div>
+      </section>
     </div>
   </div>
 </template>
