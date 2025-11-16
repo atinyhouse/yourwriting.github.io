@@ -188,9 +188,23 @@
       <div class="section">
         <div class="section-header">
           <h2>已导入内容</h2>
-          <button @click="reanalyze" class="secondary" :disabled="library.sources.length === 0">
-            重新分析
-          </button>
+          <div class="button-group">
+            <button
+              @click="() => reanalyze(false)"
+              class="secondary"
+              :disabled="library.sources.length === 0 || isAnalyzing"
+            >
+              {{ isAnalyzing ? '分析中...' : '快速分析（正则）' }}
+            </button>
+            <button
+              @click="() => reanalyze(true)"
+              class="accent"
+              :disabled="library.sources.length === 0 || isAnalyzing || !settings?.deepseekApiKey"
+              :title="!settings?.deepseekApiKey ? '请先在设置中配置 DeepSeek API Key' : ''"
+            >
+              {{ isAnalyzing ? '分析中...' : '🤖 AI 深度分析' }}
+            </button>
+          </div>
         </div>
 
         <div v-if="library.sources.length === 0" class="empty-state">
@@ -219,7 +233,18 @@
       <div v-if="library.analysis" class="section accent-blue">
         <div class="section-header">
           <h2>文风分析结果</h2>
-          <span class="data-badge">基于 {{ library.analysis.totalWords.toLocaleString() }} 字分析</span>
+          <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
+            <span
+              class="data-badge"
+              :style="{
+                backgroundColor: library.analysis.analysisMethod === 'AI' ? '#e5f2ff' : '#f5f5f5',
+                borderColor: library.analysis.analysisMethod === 'AI' ? '#0066ff' : '#ccc'
+              }"
+            >
+              {{ library.analysis.analysisMethod === 'AI' ? '🤖 AI 深度分析' : '📊 正则分析' }}
+            </span>
+            <span class="data-badge">基于 {{ library.analysis.totalWords.toLocaleString() }} 字分析</span>
+          </div>
         </div>
 
         <!-- 1. 语言风格 -->
@@ -382,9 +407,10 @@ import {
   addToStyleLibrary,
   removeFromStyleLibrary,
   clearStyleLibrary,
-  saveStyleLibrary
+  saveStyleLibrary,
+  getSettings
 } from '../utils/storage'
-import { analyzeWritingStyle, cleanContent } from '../utils/styleAnalysis'
+import { analyzeWritingStyle, analyzeStyleWithAI, cleanContent } from '../utils/styleAnalysis'
 import {
   detectUrlType,
   extractWechatArticle,
@@ -395,6 +421,7 @@ import {
 } from '../utils/urlExtractor'
 
 const library = ref({ sources: [], analysis: null, totalWords: 0 })
+const settings = ref(null)
 const manualContent = ref('')
 const manualTitle = ref('')
 const urlInput = ref('')
@@ -403,6 +430,7 @@ const wechatBizInput = ref('') // 微信公众号 biz 参数
 const wechatCookieInput = ref('') // 微信 cookie
 const wechatHtmlInput = ref('') // 微信HTML源码输入
 const isLoadingUrl = ref(false)
+const isAnalyzing = ref(false) // 分析中状态
 const fileInput = ref(null)
 
 // 批量导入进度
@@ -422,6 +450,7 @@ const batchProgressPercent = computed(() => {
 
 onMounted(async () => {
   library.value = await getStyleLibrary()
+  settings.value = await getSettings()
 })
 
 const handleFileUpload = async (event) => {
@@ -834,16 +863,38 @@ const clearLibrary = async () => {
   library.value = { sources: [], analysis: null, totalWords: 0 }
 }
 
-const reanalyze = async () => {
+const reanalyze = async (useAI = false) => {
   if (library.value.sources.length === 0) {
     library.value.analysis = null
     await saveStyleLibrary(library.value)
     return
   }
 
-  library.value.analysis = analyzeWritingStyle(library.value.sources)
-  library.value.totalWords = library.value.analysis.totalWords
-  await saveStyleLibrary(library.value)
+  isAnalyzing.value = true
+
+  try {
+    if (useAI) {
+      // 使用 AI 分析
+      if (!settings.value?.deepseekApiKey) {
+        alert('请先在设置中配置 DeepSeek API Key')
+        return
+      }
+
+      library.value.analysis = await analyzeStyleWithAI(library.value.sources, settings.value.deepseekApiKey)
+      alert('✅ AI 深度分析完成！\n\n分析结果已保存到文风库。')
+    } else {
+      // 使用正则表达式分析
+      library.value.analysis = analyzeWritingStyle(library.value.sources)
+    }
+
+    library.value.totalWords = library.value.analysis.totalWords
+    await saveStyleLibrary(library.value)
+  } catch (error) {
+    console.error('分析失败:', error)
+    alert(`分析失败: ${error.message}`)
+  } finally {
+    isAnalyzing.value = false
+  }
 }
 
 const formatDate = (timestamp) => {

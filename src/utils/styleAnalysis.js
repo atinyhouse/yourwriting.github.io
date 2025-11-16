@@ -324,6 +324,330 @@ export const analyzeSentenceComplexity = (texts) => {
   }
 }
 
+// 🆕 分析人格特质底色（基于大五人格理论）
+export const analyzePersonalityTraits = (texts) => {
+  const allText = texts.join(' ')
+
+  // 外向性 (Extraversion)
+  const extraversionKeywords = /社交|朋友|聚会|分享|交流|活跃|热情|开朗|外向|人群|派对/g
+  const introversionKeywords = /独处|安静|思考|内向|独自|静谧|宁静|一个人|独立|私密/g
+
+  // 开放性 (Openness)
+  const opennessKeywords = /创新|创意|想象|艺术|尝试|探索|新|实验|好奇|不同|独特|另类/g
+  const conservativeKeywords = /传统|稳定|经典|常规|保守|惯例|固定|习惯|规矩/g
+
+  // 责任心 (Conscientiousness)
+  const conscientiousnessKeywords = /计划|目标|组织|规划|效率|准时|完成|任务|责任|认真|严谨|细致/g
+  const spontaneousKeywords = /随性|即兴|灵活|自由|随意|临时|不拘/g
+
+  // 宜人性 (Agreeableness)
+  const agreeablenessKeywords = /理解|包容|善良|温暖|关心|体贴|帮助|同情|友善|和善/g
+  const assertivenessKeywords = /坚持|主张|立场|批评|反对|不同意|辩论|争论/g
+
+  // 情绪稳定性 (Emotional Stability)
+  const stabilityKeywords = /平静|冷静|淡定|稳定|放松|从容|理性|客观/g
+  const neuroticismKeywords = /焦虑|担心|紧张|压力|不安|恐惧|忧虑|敏感|情绪|波动/g
+
+  const extCount = (allText.match(extraversionKeywords) || []).length
+  const intCount = (allText.match(introversionKeywords) || []).length
+  const openCount = (allText.match(opennessKeywords) || []).length
+  const consCount = (allText.match(conservativeKeywords) || []).length
+  const consciCount = (allText.match(conscientiousnessKeywords) || []).length
+  const spontCount = (allText.match(spontaneousKeywords) || []).length
+  const agreeCount = (allText.match(agreeablenessKeywords) || []).length
+  const assertCount = (allText.match(assertivenessKeywords) || []).length
+  const stabCount = (allText.match(stabilityKeywords) || []).length
+  const neuroCount = (allText.match(neuroticismKeywords) || []).length
+
+  return {
+    extraversion: extCount > intCount ? 'extraverted' : 'introverted',
+    extraversionScore: extCount - intCount,
+    openness: openCount > consCount ? 'open' : 'conservative',
+    opennessScore: openCount - consCount,
+    conscientiousness: consciCount > spontCount ? 'conscientious' : 'spontaneous',
+    conscientiousnessScore: consciCount - spontCount,
+    agreeableness: agreeCount > assertCount ? 'agreeable' : 'assertive',
+    agreeablenessScore: agreeCount - assertCount,
+    stability: stabCount > neuroCount ? 'stable' : 'sensitive',
+    stabilityScore: stabCount - neuroCount
+  }
+}
+
+// 🆕 分析价值观和世界观
+export const analyzeWorldview = (texts) => {
+  const allText = texts.join(' ')
+
+  // 人生态度
+  const optimismKeywords = /希望|美好|积极|乐观|阳光|光明|幸福|快乐|满足|感恩/g
+  const pessimismKeywords = /悲观|消极|灰暗|绝望|无奈|痛苦|失望|迷茫|困惑/g
+
+  // 价值取向
+  const materialismKeywords = /金钱|财富|成功|地位|名利|物质|赚钱|收入|价格|贵|便宜/g
+  const idealismKeywords = /理想|意义|价值|精神|灵魂|信念|追求|梦想|情怀|使命/g
+
+  // 关系观
+  const collectivismKeywords = /我们|团队|集体|社会|群体|大家|共同|合作|一起/g
+  const individualismKeywords = /自我|个人|独立|自由|自主|个性|不同|独特/g
+
+  // 时间观
+  const presentKeywords = /现在|当下|此刻|今天|眼前|及时|享受|活在/g
+  const futureKeywords = /未来|将来|明天|长远|规划|投资|准备|积累|储备/g
+  const pastKeywords = /过去|曾经|回忆|怀念|历史|传统|经验|教训/g
+
+  const optimism = (allText.match(optimismKeywords) || []).length
+  const pessimism = (allText.match(pessimismKeywords) || []).length
+  const materialism = (allText.match(materialismKeywords) || []).length
+  const idealism = (allText.match(idealismKeywords) || []).length
+  const collectivism = (allText.match(collectivismKeywords) || []).length
+  const individualism = (allText.match(individualismKeywords) || []).length
+  const present = (allText.match(presentKeywords) || []).length
+  const future = (allText.match(futureKeywords) || []).length
+  const past = (allText.match(pastKeywords) || []).length
+
+  // 确定主导时间观
+  const timeOrientation = present > future && present > past ? 'present' :
+                         future > present && future > past ? 'future' : 'past'
+
+  return {
+    lifeAttitude: optimism > pessimism * 1.5 ? 'optimistic' :
+                  pessimism > optimism * 1.5 ? 'pessimistic' : 'realistic',
+    attitudeScore: optimism - pessimism,
+    valueOrientation: idealism > materialism * 1.2 ? 'idealistic' :
+                     materialism > idealism * 1.2 ? 'materialistic' : 'balanced',
+    valueScore: idealism - materialism,
+    relationshipView: collectivism > individualism ? 'collectivist' : 'individualist',
+    relationshipScore: collectivism - individualism,
+    timeOrientation,
+    timeScores: { present, future, past }
+  }
+}
+
+// 🆕 分析兴趣偏好和文化品味
+export const analyzeCulturalTaste = (texts) => {
+  const allText = texts.join(' ')
+
+  // 文化类型偏好
+  const literatureKeywords = /书|阅读|小说|诗|文学|作家|作品|故事|文字|写作/g
+  const filmKeywords = /电影|影片|导演|演员|剧情|镜头|画面|影院|观影/g
+  const musicKeywords = /音乐|歌曲|旋律|歌手|乐队|演唱会|专辑|听歌|节奏/g
+  const artKeywords = /艺术|绘画|美术|展览|画作|艺术家|设计|审美|美学/g
+  const techKeywords = /科技|技术|数字|互联网|AI|程序|代码|产品|创新/g
+
+  // 话题偏好
+  const philosophyKeywords = /哲学|思考|思想|存在|本质|意义|真理|认知|智慧|道理/g
+  const psychologyKeywords = /心理|情绪|感受|内心|潜意识|性格|行为|动机/g
+  const socialKeywords = /社会|时代|现象|问题|观察|分析|视角|角度|看法/g
+  const personalKeywords = /生活|日常|感悟|体验|经历|故事|瞬间|细节|回忆/g
+  const creativeKeywords = /创作|想象|灵感|构思|创意|表达|呈现|作品/g
+
+  const lit = (allText.match(literatureKeywords) || []).length
+  const film = (allText.match(filmKeywords) || []).length
+  const music = (allText.match(musicKeywords) || []).length
+  const art = (allText.match(artKeywords) || []).length
+  const tech = (allText.match(techKeywords) || []).length
+
+  const philosophy = (allText.match(philosophyKeywords) || []).length
+  const psychology = (allText.match(psychologyKeywords) || []).length
+  const social = (allText.match(socialKeywords) || []).length
+  const personal = (allText.match(personalKeywords) || []).length
+  const creative = (allText.match(creativeKeywords) || []).length
+
+  // 找出最突出的文化类型
+  const culturalInterests = [
+    { type: 'literature', score: lit, name: '文学' },
+    { type: 'film', score: film, name: '影视' },
+    { type: 'music', score: music, name: '音乐' },
+    { type: 'art', score: art, name: '艺术' },
+    { type: 'tech', score: tech, name: '科技' }
+  ].sort((a, b) => b.score - a.score)
+
+  // 找出最突出的话题类型
+  const topicPreferences = [
+    { type: 'philosophy', score: philosophy, name: '哲学思辨' },
+    { type: 'psychology', score: psychology, name: '心理洞察' },
+    { type: 'social', score: social, name: '社会观察' },
+    { type: 'personal', score: personal, name: '个人生活' },
+    { type: 'creative', score: creative, name: '创作表达' }
+  ].sort((a, b) => b.score - a.score)
+
+  return {
+    primaryCulturalInterest: culturalInterests[0].type,
+    culturalInterests: culturalInterests.filter(c => c.score > 0),
+    primaryTopic: topicPreferences[0].type,
+    topicPreferences: topicPreferences.filter(t => t.score > 0)
+  }
+}
+
+// 🆕 提取作品主题和反映的思想
+export const analyzeThemesAndIdeas = (texts) => {
+  const allText = texts.join(' ')
+
+  // 核心主题关键词
+  const themes = {
+    growth: { keywords: /成长|进步|学习|提升|变化|改变|突破|蜕变/, count: 0, name: '个人成长' },
+    relationship: { keywords: /关系|相处|理解|沟通|陪伴|连接|孤独|距离/, count: 0, name: '人际关系' },
+    identity: { keywords: /自我|身份|定位|认同|寻找|迷失|探索|发现/, count: 0, name: '自我认同' },
+    time: { keywords: /时间|岁月|年华|流逝|永恒|瞬间|记忆|消逝/, count: 0, name: '时间流逝' },
+    society: { keywords: /社会|时代|环境|压力|规则|束缚|自由|选择/, count: 0, name: '社会环境' },
+    meaning: { keywords: /意义|价值|目的|追求|方向|虚无|荒谬|存在/, count: 0, name: '生命意义' },
+    love: { keywords: /爱|情感|感情|喜欢|爱情|亲情|友情|温暖/, count: 0, name: '爱与情感' },
+    loss: { keywords: /失去|离开|分别|告别|怀念|逝去|错过|遗憾/, count: 0, name: '失去与告别' }
+  }
+
+  // 统计每个主题的出现频率
+  Object.keys(themes).forEach(key => {
+    const matches = allText.match(themes[key].keywords)
+    themes[key].count = matches ? matches.length : 0
+  })
+
+  // 排序找出核心主题
+  const coreThemes = Object.entries(themes)
+    .map(([key, data]) => ({ key, ...data }))
+    .filter(t => t.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+
+  return {
+    coreThemes,
+    dominantTheme: coreThemes[0]?.key || 'unknown'
+  }
+}
+
+// 🆕 使用 AI 进行文风分析（代替僵硬的正则表达式）
+export const analyzeStyleWithAI = async (sources, apiKey) => {
+  if (!sources || sources.length === 0) {
+    throw new Error('没有内容可供分析')
+  }
+
+  const texts = sources.map(s => s.content).filter(Boolean)
+  if (texts.length === 0) {
+    throw new Error('内容为空')
+  }
+
+  // 动态导入 AI API
+  const { chatWithDeepSeek } = await import('./deepseekAPI')
+
+  // 准备分析的样本文本（限制长度以避免token超限）
+  const sampleText = texts.join('\n\n').slice(0, 8000)
+  const totalWords = texts.reduce((sum, text) => sum + text.length, 0)
+
+  const analysisPrompt = `你是一位专业的文风分析专家。请深度分析以下文本的写作风格，并以JSON格式返回分析结果。
+
+**文本样本（共 ${totalWords} 字）**：
+${sampleText}
+
+**分析要求**：
+请从以下维度进行深入分析，并以JSON格式返回结果：
+
+{
+  "languageStyle": {
+    "tone": "casual | formal | humorous | neutral",
+    "toneDescription": "对语气的详细描述",
+    "avgSentenceLength": 数字,
+    "sentenceLengthStyle": "对句子长度偏好的描述",
+    "complexity": "simple | varied | complex",
+    "complexityDescription": "对句式复杂度的描述"
+  },
+  "perspective": {
+    "dominant": "first | second | third",
+    "description": "对叙述视角的详细描述",
+    "firstPersonPercent": 数字,
+    "secondPersonPercent": 数字,
+    "thirdPersonPercent": 数字
+  },
+  "personality": {
+    "extraversion": "extraverted | introverted",
+    "extraversionDescription": "社交倾向的详细分析",
+    "openness": "open | conservative",
+    "opennessDescription": "思维开放性的详细分析",
+    "conscientiousness": "conscientious | spontaneous",
+    "conscientiousnessDescription": "责任心和计划性的详细分析",
+    "agreeableness": "agreeable | assertive",
+    "agreeablenessDescription": "人际态度的详细分析",
+    "stability": "stable | sensitive",
+    "stabilityDescription": "情绪特征的详细分析"
+  },
+  "worldview": {
+    "lifeAttitude": "optimistic | pessimistic | realistic",
+    "lifeAttitudeDescription": "人生态度的详细分析",
+    "valueOrientation": "idealistic | materialistic | balanced",
+    "valueOrientationDescription": "价值取向的详细分析",
+    "relationshipView": "collectivist | individualist",
+    "relationshipDescription": "关系观念的详细分析",
+    "timeOrientation": "present | future | past",
+    "timeOrientationDescription": "时间观念的详细分析"
+  },
+  "culturalTaste": {
+    "primaryInterests": ["文学", "影视", "音乐", "艺术", "科技"],
+    "primaryInterestsDescription": "文化兴趣的详细描述",
+    "topicPreferences": ["哲学思辨", "心理洞察", "社会观察", "个人生活", "创作表达"],
+    "topicPreferencesDescription": "话题偏好的详细描述"
+  },
+  "themes": {
+    "coreThemes": ["个人成长", "人际关系", "自我认同", "时间流逝", "社会环境", "生命意义", "爱与情感", "失去与告别"],
+    "dominantTheme": "最核心的主题",
+    "themesDescription": "核心主题的详细分析"
+  },
+  "expressionHabits": {
+    "openingStyle": "问句开头 | 故事开头 | 观点开头",
+    "openingStyleDescription": "开头方式的详细描述",
+    "commonTransitions": ["但是", "所以", "其实", "而且"],
+    "commonPhrases": ["常用表达1", "常用表达2", "常用表达3"],
+    "keywordThemes": ["关键词1", "关键词2", "关键词3"],
+    "punctuationStyle": "标点使用习惯的描述"
+  },
+  "overallSummary": "整体文风的综合描述（200-300字）",
+  "writingGuidance": "模仿这种文风时的具体建议（200-300字）"
+}
+
+**重要提示**：
+1. 请提供深入、细致的分析，而不是简单的分类
+2. 所有描述字段都要具体、有洞察力
+3. 基于文本证据进行推断，而非臆测
+4. 返回纯JSON格式，不要包含任何其他文字或markdown标记`
+
+  try {
+    const response = await chatWithDeepSeek(
+      [{ role: 'user', content: analysisPrompt }],
+      apiKey,
+      {
+        temperature: 0.3, // 较低温度保证分析的一致性
+        maxTokens: 4000
+      }
+    )
+
+    // 提取JSON（可能被markdown代码块包裹）
+    let jsonContent = response.trim()
+    const jsonMatch = jsonContent.match(/```json\n([\s\S]*?)\n```/)
+    if (jsonMatch) {
+      jsonContent = jsonMatch[1]
+    } else if (jsonContent.startsWith('```') && jsonContent.endsWith('```')) {
+      jsonContent = jsonContent.slice(3, -3).trim()
+    }
+
+    const aiAnalysis = JSON.parse(jsonContent)
+
+    // 补充基础统计数据（保留regex分析的部分结果作为备份）
+    const keywords = extractKeywords(texts)
+    const commonPhrases = extractCommonPhrases(texts)
+
+    return {
+      // AI 深度分析结果
+      ...aiAnalysis,
+
+      // 补充基础数据
+      keywords,
+      commonPhrases,
+      totalWords,
+      analyzedAt: new Date().toISOString(),
+      analysisMethod: 'AI' // 标记为AI分析
+    }
+  } catch (error) {
+    console.error('AI 分析失败:', error)
+    throw new Error(`AI 分析失败: ${error.message}`)
+  }
+}
+
 // 主分析函数（增强版）
 export const analyzeWritingStyle = (sources) => {
   if (!sources || sources.length === 0) {
@@ -344,11 +668,17 @@ export const analyzeWritingStyle = (sources) => {
   const tone = detectTone(texts)
   const totalWords = texts.reduce((sum, text) => sum + text.length, 0)
 
-  // 深度分析（新增）
+  // 深度分析（原有）
   const openingPatterns = analyzeOpeningPatterns(texts)
   const transitions = analyzeTransitions(texts)
   const perspective = analyzePerspective(texts)
   const complexity = analyzeSentenceComplexity(texts)
+
+  // 🆕 深度人格和价值观分析
+  const personality = analyzePersonalityTraits(texts)
+  const worldview = analyzeWorldview(texts)
+  const culturalTaste = analyzeCulturalTaste(texts)
+  const themes = analyzeThemesAndIdeas(texts)
 
   return {
     // 基础数据
@@ -359,13 +689,20 @@ export const analyzeWritingStyle = (sources) => {
     tone,
     totalWords,
 
-    // 深度分析
+    // 深度分析（原有）
     openingPatterns,
     transitions,
     perspective,
     complexity,
 
-    analyzedAt: new Date().toISOString()
+    // 🆕 深度人格和价值观分析
+    personality,
+    worldview,
+    culturalTaste,
+    themes,
+
+    analyzedAt: new Date().toISOString(),
+    analysisMethod: 'regex' // 标记为正则分析
   }
 }
 
@@ -456,6 +793,47 @@ export const generateStyleDescription = (analysis) => {
   // 分析转折词使用
   const topTransitions = analysis.transitions.slice(0, 3).map(([word, count]) => word).join('、')
 
+  // 🆕 人格特质描述
+  const personalityMap = {
+    extraversion: { extraverted: '外向型', introverted: '内向型' },
+    openness: { open: '开放创新型', conservative: '传统保守型' },
+    conscientiousness: { conscientious: '谨慎计划型', spontaneous: '灵活随性型' },
+    agreeableness: { agreeable: '温和包容型', assertive: '坚定主张型' },
+    stability: { stable: '情绪稳定型', sensitive: '情感敏锐型' }
+  }
+
+  const personality = analysis.personality || {}
+  const personalityDesc = `
+- 社交倾向：${personalityMap.extraversion[personality.extraversion] || '未知'}
+- 思维方式：${personalityMap.openness[personality.openness] || '未知'}
+- 行为风格：${personalityMap.conscientiousness[personality.conscientiousness] || '未知'}
+- 人际态度：${personalityMap.agreeableness[personality.agreeableness] || '未知'}
+- 情绪特征：${personalityMap.stability[personality.stability] || '未知'}`
+
+  // 🆕 价值观和世界观描述
+  const worldview = analysis.worldview || {}
+  const worldviewMap = {
+    lifeAttitude: { optimistic: '乐观积极', pessimistic: '悲观审慎', realistic: '现实主义' },
+    valueOrientation: { idealistic: '理想主义', materialistic: '现实主义', balanced: '平衡取向' },
+    relationshipView: { collectivist: '集体主义', individualist: '个人主义' },
+    timeOrientation: { present: '活在当下', future: '面向未来', past: '怀旧取向' }
+  }
+
+  const worldviewDesc = `
+- 人生态度：${worldviewMap.lifeAttitude[worldview.lifeAttitude] || '未知'}
+- 价值取向：${worldviewMap.valueOrientation[worldview.valueOrientation] || '未知'}
+- 关系观念：${worldviewMap.relationshipView[worldview.relationshipView] || '未知'}
+- 时间观念：${worldviewMap.timeOrientation[worldview.timeOrientation] || '未知'}`
+
+  // 🆕 文化品味和兴趣偏好
+  const culturalTaste = analysis.culturalTaste || {}
+  const culturalInterestsText = culturalTaste.culturalInterests?.slice(0, 3).map(c => c.name).join('、') || '未明确'
+  const topicPreferencesText = culturalTaste.topicPreferences?.slice(0, 3).map(t => t.name).join('、') || '未明确'
+
+  // 🆕 核心主题和思想
+  const themes = analysis.themes || {}
+  const coreThemesText = themes.coreThemes?.slice(0, 3).map(t => t.name).join('、') || '未明确'
+
   return `
 【写作风格档案】
 
@@ -486,8 +864,29 @@ ${analysis.complexity.diversity === 'complex' ? '- 善于使用复杂句式，�
 ${topPhrases.length > 3 ? `- 有标志性的表达习惯，形成个人语言风格` : ''}
 ${expressionExamples}
 
-5️⃣ 模仿指南
+5️⃣ 人格底色
+${personalityDesc}
+
+6️⃣ 价值观与世界观
+${worldviewDesc}
+
+7️⃣ 兴趣偏好与文化品味
+- 文化兴趣：${culturalInterestsText}
+- 话题偏好：${topicPreferencesText}
+- 核心主题：${coreThemesText}
+
+8️⃣ 模仿指南
 当你用这种文风写作时：
+
+**人格特质呈现**
+${personality.extraversion === 'extraverted' ? '- 展现出对社交和分享的热情，表达外向开朗' : '- 保持内敛沉思的特质，重视独处和思考'}
+${personality.openness === 'open' ? '- 探索新颖独特的角度，不拘泥于传统' : '- 尊重经典和传统，强调稳定性'}
+${personality.conscientiousness === 'conscientious' ? '- 体现计划性和条理性，注重细节' : '- 保持灵活和随性，强调自由'}
+
+**价值观呈现**
+${worldview.lifeAttitude === 'optimistic' ? '- 传递积极向上的人生态度，看到美好的一面' : worldview.lifeAttitude === 'pessimistic' ? '- 保持审慎的态度，深入探讨矛盾和困境' : '- 保持客观理性，平衡看待问题'}
+${worldview.valueOrientation === 'idealistic' ? '- 强调精神追求和理想意义，而非物质' : worldview.valueOrientation === 'materialistic' ? '- 关注现实利益和实际价值' : '- 平衡理想与现实'}
+${worldview.timeOrientation === 'present' ? '- 聚焦当下体验，及时行乐的态度' : worldview.timeOrientation === 'future' ? '- 着眼长远规划，为未来做准备' : '- 回望过去经验，从历史中汲取智慧'}
 
 **思维方式**
 ${opening.patterns.question > openingTotal * 0.2 ? '- 可以用问题引入话题，引发思考' : ''}
@@ -503,6 +902,7 @@ ${analysis.perspective.dominant === 'second' ? '- 用第二人称直接对话，
 
 **表达细节**
 - 关注 "${themeWords}" 这些核心主题
+- 核心思想围绕：${coreThemesText}
 ${topPhrases.length > 0 ? `- 尝试使用这些特色表达：${topPhrases.slice(0, 3).join('、')}` : ''}
 ${opening.examples.question.length > 0 || opening.examples.story.length > 0 || opening.examples.statement.length > 0 ? `- 开头方式要像：${opening.examples.question[0] || opening.examples.story[0] || opening.examples.statement[0]}...` : ''}
 
