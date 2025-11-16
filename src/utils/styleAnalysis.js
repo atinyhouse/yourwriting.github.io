@@ -732,66 +732,92 @@ export const generateStyleDescription = (analysis) => {
   }
 
   // 分析句子长度偏好
-  const sentenceLengthStyle = analysis.avgSentenceLength < 15
+  const avgSentenceLength = analysis.languageStyle?.avgSentenceLength || analysis.avgSentenceLength || 20
+  const sentenceLengthStyle = avgSentenceLength < 15
     ? '偏好使用短句，节奏明快，适合表达清晰的观点'
-    : analysis.avgSentenceLength < 25
+    : avgSentenceLength < 25
     ? '句子长度适中，兼顾表达深度和阅读流畅性'
     : '倾向使用长句，善于铺陈和细节描写，表达更有层次感'
 
   // 分析标点使用习惯
-  const punc = analysis.punctuationStyle
-  const totalPunc = Object.values(punc).reduce((sum, count) => sum + count, 0)
-  const exclamationRatio = ((punc['！'] + punc['!']) / totalPunc * 100).toFixed(1)
-  const questionRatio = ((punc['？'] + punc['?']) / totalPunc * 100).toFixed(1)
-  const ellipsisRatio = ((punc['…'] || 0) / totalPunc * 100).toFixed(1)
-
   let punctuationStyle = ''
-  if (parseFloat(exclamationRatio) > 5) {
-    punctuationStyle += '经常使用感叹号，表达情感丰富、态度鲜明；'
-  }
-  if (parseFloat(questionRatio) > 3) {
-    punctuationStyle += '善用问句与读者互动，引发思考；'
-  }
-  if (parseFloat(ellipsisRatio) > 2) {
-    punctuationStyle += '使用省略号营造留白和思考空间；'
-  }
-  if (!punctuationStyle) {
+
+  // 检查是AI分析还是正则分析
+  if (typeof analysis.punctuationStyle === 'string') {
+    // AI分析：直接使用描述字符串
+    punctuationStyle = analysis.expressionHabits?.punctuationStyle || analysis.punctuationStyle || '标点使用克制，以陈述为主，语气平稳。'
+  } else if (typeof analysis.punctuationStyle === 'object' && analysis.punctuationStyle !== null) {
+    // 正则分析：计算标点统计
+    const punc = analysis.punctuationStyle
+    const totalPunc = Object.values(punc).reduce((sum, count) => sum + count, 0)
+
+    if (totalPunc > 0) {
+      const exclamationRatio = ((punc['！'] + punc['!']) / totalPunc * 100).toFixed(1)
+      const questionRatio = ((punc['？'] + punc['?']) / totalPunc * 100).toFixed(1)
+      const ellipsisRatio = ((punc['…'] || 0) / totalPunc * 100).toFixed(1)
+
+      if (parseFloat(exclamationRatio) > 5) {
+        punctuationStyle += '经常使用感叹号，表达情感丰富、态度鲜明；'
+      }
+      if (parseFloat(questionRatio) > 3) {
+        punctuationStyle += '善用问句与读者互动，引发思考；'
+      }
+      if (parseFloat(ellipsisRatio) > 2) {
+        punctuationStyle += '使用省略号营造留白和思考空间；'
+      }
+    }
+
+    if (!punctuationStyle) {
+      punctuationStyle = '标点使用克制，以陈述为主，语气平稳。'
+    }
+  } else {
     punctuationStyle = '标点使用克制，以陈述为主，语气平稳。'
   }
 
   // 提取关键主题词
-  const topKeywords = analysis.keywords.slice(0, 10).map(k => k.word)
-  const themeWords = topKeywords.slice(0, 5).join('、')
+  const topKeywords = analysis.keywords?.slice(0, 10).map(k => k.word) || []
+  const themeWords = topKeywords.slice(0, 5).join('、') || '未知主题'
 
   // 提取常用表达
-  const topPhrases = analysis.commonPhrases.slice(0, 8).map(p => p.phrase)
+  const topPhrases = analysis.commonPhrases?.slice(0, 8).map(p => p.phrase) ||
+                     analysis.expressionHabits?.commonPhrases?.slice(0, 8) || []
   const expressionExamples = topPhrases.length > 0
     ? `\n\n【常用表达方式】\n${topPhrases.map((p, i) => `${i + 1}. "${p}"`).join('\n')}`
     : ''
 
   // 分析开头方式
-  const opening = analysis.openingPatterns
-  const openingTotal = opening.patterns.question + opening.patterns.story + opening.patterns.statement
   let openingStyle = ''
-  if (opening.patterns.question > openingTotal * 0.3) {
-    openingStyle = '常用问句开头，引发读者思考'
-    if (opening.examples.question.length > 0) {
-      openingStyle += `\n   例如："${opening.examples.question[0]}..."`
+  if (analysis.openingPatterns) {
+    // 正则分析格式
+    const opening = analysis.openingPatterns
+    const openingTotal = opening.patterns.question + opening.patterns.story + opening.patterns.statement
+    if (opening.patterns.question > openingTotal * 0.3) {
+      openingStyle = '常用问句开头，引发读者思考'
+      if (opening.examples?.question?.length > 0) {
+        openingStyle += `\n   例如："${opening.examples.question[0]}..."`
+      }
+    } else if (opening.patterns.story > openingTotal * 0.3) {
+      openingStyle = '喜欢用故事或场景开头，营造代入感'
+      if (opening.examples?.story?.length > 0) {
+        openingStyle += `\n   例如："${opening.examples.story[0]}..."`
+      }
+    } else {
+      openingStyle = '习惯开门见山，直接陈述观点'
+      if (opening.examples?.statement?.length > 0) {
+        openingStyle += `\n   例如："${opening.examples.statement[0]}..."`
+      }
     }
-  } else if (opening.patterns.story > openingTotal * 0.3) {
-    openingStyle = '喜欢用故事或场景开头，营造代入感'
-    if (opening.examples.story.length > 0) {
-      openingStyle += `\n   例如："${opening.examples.story[0]}..."`
-    }
+  } else if (analysis.expressionHabits?.openingStyle) {
+    // AI分析格式
+    openingStyle = analysis.expressionHabits.openingStyleDescription || analysis.expressionHabits.openingStyle
   } else {
-    openingStyle = '习惯开门见山，直接陈述观点'
-    if (opening.examples.statement.length > 0) {
-      openingStyle += `\n   例如："${opening.examples.statement[0]}..."`
-    }
+    openingStyle = '开头方式多样'
   }
 
   // 分析转折词使用
-  const topTransitions = analysis.transitions.slice(0, 3).map(([word, count]) => word).join('、')
+  const topTransitions = analysis.transitions?.slice(0, 3).map(([word, count]) => word).join('、') ||
+                         analysis.expressionHabits?.commonTransitions?.slice(0, 3).join('、') ||
+                         '但是、所以、而且'
 
   // 🆕 人格特质描述
   const personalityMap = {
@@ -827,28 +853,46 @@ export const generateStyleDescription = (analysis) => {
 
   // 🆕 文化品味和兴趣偏好
   const culturalTaste = analysis.culturalTaste || {}
-  const culturalInterestsText = culturalTaste.culturalInterests?.slice(0, 3).map(c => c.name).join('、') || '未明确'
-  const topicPreferencesText = culturalTaste.topicPreferences?.slice(0, 3).map(t => t.name).join('、') || '未明确'
+  const culturalInterestsText = culturalTaste.primaryInterests?.slice(0, 3).join('、') ||
+                                culturalTaste.culturalInterests?.slice(0, 3).map(c => typeof c === 'string' ? c : c.name).join('、') ||
+                                '未明确'
+  const topicPreferencesText = culturalTaste.topicPreferences?.slice(0, 3).map(t => typeof t === 'string' ? t : t.name).join('、') || '未明确'
 
   // 🆕 核心主题和思想
   const themes = analysis.themes || {}
-  const coreThemesText = themes.coreThemes?.slice(0, 3).map(t => t.name).join('、') || '未明确'
+  const coreThemesText = themes.coreThemes?.slice(0, 3).map(t => typeof t === 'string' ? t : t.name).join('、') || '未明确'
+
+  // Extract tone - handle both AI and regex formats
+  const tone = analysis.languageStyle?.tone || analysis.tone || 'neutral'
+
+  // Extract perspective - handle both AI and regex formats
+  const perspective = analysis.perspective || {}
+  const perspectiveDominant = perspective.dominant || 'first'
+  const firstPersonPercent = perspective.firstPersonPercent || perspective.firstPerson || '0'
+  const secondPersonPercent = perspective.secondPersonPercent || perspective.secondPerson || '0'
+  const thirdPersonPercent = perspective.thirdPersonPercent || perspective.thirdPerson || '0'
+
+  // Extract complexity - handle both AI and regex formats
+  const complexity = analysis.languageStyle?.complexity || analysis.complexity?.diversity || 'varied'
+  const complexitySimple = analysis.complexity?.simple || '0'
+  const complexityCompound = analysis.complexity?.compound || '0'
+  const complexityComplex = analysis.complexity?.complex || '0'
 
   return `
 【写作风格档案】
 
 1️⃣ 语言风格
-- 整体语气：${toneMap[analysis.tone] || '中性客观'}
-- 句式特点：${sentenceLengthStyle}（平均 ${analysis.avgSentenceLength} 字/句）
-- 句式复杂度：${complexityMap[analysis.complexity.diversity]}
-  · 简单句：${analysis.complexity.simple}%
-  · 复合句：${analysis.complexity.compound}%
-  · 复杂句：${analysis.complexity.complex}%
+- 整体语气：${toneMap[tone] || '中性客观'}
+- 句式特点：${sentenceLengthStyle}（平均 ${avgSentenceLength} 字/句）
+- 句式复杂度：${complexityMap[complexity] || '未知'}
+${complexitySimple !== '0' ? `  · 简单句：${complexitySimple}%` : ''}
+${complexityCompound !== '0' ? `  · 复合句：${complexityCompound}%` : ''}
+${complexityComplex !== '0' ? `  · 复杂句：${complexityComplex}%` : ''}
 - 标点风格：${punctuationStyle}
 
 2️⃣ 叙述视角
-- ${perspectiveMap[analysis.perspective.dominant]}
-- 人称分布：我(${analysis.perspective.firstPerson}%) / 你(${analysis.perspective.secondPerson}%) / 他(${analysis.perspective.thirdPerson}%)
+- ${perspectiveMap[perspectiveDominant] || '第一人称为主'}
+- 人称分布：我(${firstPersonPercent}%) / 你(${secondPersonPercent}%) / 他(${thirdPersonPercent}%)
 
 3️⃣ 行文习惯
 - 开头方式：${openingStyle}
@@ -858,9 +902,9 @@ export const generateStyleDescription = (analysis) => {
 4️⃣ 表达特征
 ${punctuationStyle.includes('感叹号') ? '- 情感表达直接，不回避主观感受' : ''}
 ${punctuationStyle.includes('问句') ? '- 喜欢通过提问引导思考，与读者建立对话感' : ''}
-${analysis.perspective.dominant === 'first' ? '- 强调个人经历和主观感受，真实感强' : ''}
-${analysis.perspective.dominant === 'second' ? '- 直接对话读者，互动性强' : ''}
-${analysis.complexity.diversity === 'complex' ? '- 善于使用复杂句式，层层递进表达观点' : '- 句子简洁有力，一针见血'}
+${perspectiveDominant === 'first' ? '- 强调个人经历和主观感受，真实感强' : ''}
+${perspectiveDominant === 'second' ? '- 直接对话读者，互动性强' : ''}
+${complexity === 'complex' ? '- 善于使用复杂句式，层层递进表达观点' : '- 句子简洁有力，一针见血'}
 ${topPhrases.length > 3 ? `- 有标志性的表达习惯，形成个人语言风格` : ''}
 ${expressionExamples}
 
@@ -879,23 +923,22 @@ ${worldviewDesc}
 当你用这种文风写作时：
 
 **人格特质呈现**
-${personality.extraversion === 'extraverted' ? '- 展现出对社交和分享的热情，表达外向开朗' : '- 保持内敛沉思的特质，重视独处和思考'}
-${personality.openness === 'open' ? '- 探索新颖独特的角度，不拘泥于传统' : '- 尊重经典和传统，强调稳定性'}
-${personality.conscientiousness === 'conscientious' ? '- 体现计划性和条理性，注重细节' : '- 保持灵活和随性，强调自由'}
+${personality.extraversion === 'extraverted' ? '- 展现出对社交和分享的热情，表达外向开朗' : personality.extraversion === 'introverted' ? '- 保持内敛沉思的特质，重视独处和思考' : ''}
+${personality.openness === 'open' ? '- 探索新颖独特的角度，不拘泥于传统' : personality.openness === 'conservative' ? '- 尊重经典和传统，强调稳定性' : ''}
+${personality.conscientiousness === 'conscientious' ? '- 体现计划性和条理性，注重细节' : personality.conscientiousness === 'spontaneous' ? '- 保持灵活和随性，强调自由' : ''}
 
 **价值观呈现**
-${worldview.lifeAttitude === 'optimistic' ? '- 传递积极向上的人生态度，看到美好的一面' : worldview.lifeAttitude === 'pessimistic' ? '- 保持审慎的态度，深入探讨矛盾和困境' : '- 保持客观理性，平衡看待问题'}
-${worldview.valueOrientation === 'idealistic' ? '- 强调精神追求和理想意义，而非物质' : worldview.valueOrientation === 'materialistic' ? '- 关注现实利益和实际价值' : '- 平衡理想与现实'}
-${worldview.timeOrientation === 'present' ? '- 聚焦当下体验，及时行乐的态度' : worldview.timeOrientation === 'future' ? '- 着眼长远规划，为未来做准备' : '- 回望过去经验，从历史中汲取智慧'}
+${worldview.lifeAttitude === 'optimistic' ? '- 传递积极向上的人生态度，看到美好的一面' : worldview.lifeAttitude === 'pessimistic' ? '- 保持审慎的态度，深入探讨矛盾和困境' : worldview.lifeAttitude === 'realistic' ? '- 保持客观理性，平衡看待问题' : ''}
+${worldview.valueOrientation === 'idealistic' ? '- 强调精神追求和理想意义，而非物质' : worldview.valueOrientation === 'materialistic' ? '- 关注现实利益和实际价值' : worldview.valueOrientation === 'balanced' ? '- 平衡理想与现实' : ''}
+${worldview.timeOrientation === 'present' ? '- 聚焦当下体验，及时行乐的态度' : worldview.timeOrientation === 'future' ? '- 着眼长远规划，为未来做准备' : worldview.timeOrientation === 'past' ? '- 回望过去经验，从历史中汲取智慧' : ''}
 
 **思维方式**
-${opening.patterns.question > openingTotal * 0.2 ? '- 可以用问题引入话题，引发思考' : ''}
-${analysis.perspective.dominant === 'first' ? '- 以第一人称视角，分享个人经历和感受' : ''}
-${analysis.perspective.dominant === 'second' ? '- 用第二人称直接对话，增强参与感' : ''}
+${perspectiveDominant === 'first' ? '- 以第一人称视角，分享个人经历和感受' : ''}
+${perspectiveDominant === 'second' ? '- 用第二人称直接对话，增强参与感' : ''}
 
 **语言习惯**
-- 保持 ${toneMap[analysis.tone]} 的语气，不要过于正式或随意
-- 句子长度控制在 ${Math.max(10, analysis.avgSentenceLength - 5)}-${analysis.avgSentenceLength + 5} 字之间
+- 保持 ${toneMap[tone] || '中性客观'} 的语气，不要过于正式或随意
+- 句子长度控制在 ${Math.max(10, avgSentenceLength - 5)}-${avgSentenceLength + 5} 字之间
 - ${punctuationStyle.includes('感叹号') ? '适当使用感叹号表达态度' : '标点保持克制，少用感叹号'}
 - ${punctuationStyle.includes('问句') ? '可以用反问和设问增强互动感' : '以陈述句为主'}
 - 常用这些转折词：${topTransitions}
@@ -904,8 +947,7 @@ ${analysis.perspective.dominant === 'second' ? '- 用第二人称直接对话，
 - 关注 "${themeWords}" 这些核心主题
 - 核心思想围绕：${coreThemesText}
 ${topPhrases.length > 0 ? `- 尝试使用这些特色表达：${topPhrases.slice(0, 3).join('、')}` : ''}
-${opening.examples.question.length > 0 || opening.examples.story.length > 0 || opening.examples.statement.length > 0 ? `- 开头方式要像：${opening.examples.question[0] || opening.examples.story[0] || opening.examples.statement[0]}...` : ''}
 
-📊 数据基础：基于 ${analysis.totalWords.toLocaleString()} 字的文本分析
+📊 数据基础：基于 ${analysis.totalWords?.toLocaleString() || '未知'} 字的文本分析
   `.trim()
 }
