@@ -172,7 +172,7 @@ export const saveConversations = async (conversations) => {
 export const getSettings = async () => {
   const data = await localforage.getItem(KEYS.SETTINGS)
   return data || {
-    deepseekApiKey: '',
+    deepseekApiKey: 'sk-2302587a10e6420cb091ca73e56b57ca',
     modelParams: {
       temperature: 0.7,
       maxTokens: 2000
