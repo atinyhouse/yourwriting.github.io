@@ -15,12 +15,12 @@
           <div class="input-card">
             <div class="card-icon">📄</div>
             <h3>上传文档</h3>
-            <p>支持 .txt 和 .md 格式</p>
+            <p>支持 TXT, MD, Word (.docx), PDF</p>
             <input
               type="file"
               ref="fileInput"
               @change="handleFileUpload"
-              accept=".txt,.md"
+              accept=".txt,.md,.docx,.pdf"
               multiple
               style="display: none"
             />
@@ -561,6 +561,7 @@ import {
   batchExtractArticles,
   fetchAllArticlesFromSingleUrl
 } from '../utils/urlExtractor'
+import { parseDocument, validateFileSize } from '../utils/documentParser'
 
 const library = ref({ sources: [], analysis: null, totalWords: 0 })
 const settings = ref(null)
@@ -601,7 +602,12 @@ const handleFileUpload = async (event) => {
 
   for (const file of files) {
     try {
-      const content = await readFile(file)
+      // 验证文件大小（最大 10MB）
+      validateFileSize(file, 10)
+
+      // 根据文件类型解析文档
+      const content = await parseDocument(file)
+
       // 清洗内容，移除公众号系统文字
       const cleanedContent = cleanContent(content)
 
@@ -610,8 +616,17 @@ const handleFileUpload = async (event) => {
         continue
       }
 
+      // 获取文件类型
+      const fileExt = file.name.toLowerCase().split('.').pop()
+      const fileTypeMap = {
+        'txt': 'document',
+        'md': 'markdown',
+        'docx': 'word',
+        'pdf': 'pdf'
+      }
+
       await addToStyleLibrary({
-        type: 'document',
+        type: fileTypeMap[fileExt] || 'document',
         title: file.name,
         content: cleanedContent,
         url: null
@@ -626,15 +641,6 @@ const handleFileUpload = async (event) => {
 
   // 重置输入
   event.target.value = ''
-}
-
-const readFile = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => resolve(e.target.result)
-    reader.onerror = (e) => reject(new Error('文件读取失败'))
-    reader.readAsText(file)
-  })
 }
 
 const handleManualAdd = async () => {
