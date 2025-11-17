@@ -35,25 +35,31 @@
 
         <div class="form-group">
           <label>Temperature ({{ settings.modelParams.temperature }})</label>
-          <input
-            v-model.number="settings.modelParams.temperature"
-            type="range"
-            min="0"
-            max="2"
-            step="0.1"
-          />
+          <div class="range-wrapper">
+            <input
+              v-model.number="settings.modelParams.temperature"
+              type="range"
+              min="0"
+              max="2"
+              step="0.1"
+              class="custom-range"
+            />
+          </div>
           <p class="hint">控制输出的随机性。较低值更确定，较高值更有创造性。建议: 0.7</p>
         </div>
 
         <div class="form-group">
           <label>Max Tokens ({{ settings.modelParams.maxTokens }})</label>
-          <input
-            v-model.number="settings.modelParams.maxTokens"
-            type="range"
-            min="500"
-            max="4000"
-            step="100"
-          />
+          <div class="range-wrapper">
+            <input
+              v-model.number="settings.modelParams.maxTokens"
+              type="range"
+              min="500"
+              max="4000"
+              step="100"
+              class="custom-range"
+            />
+          </div>
           <p class="hint">每次回复的最大长度。建议: 2000</p>
         </div>
 
@@ -227,111 +233,533 @@ const clearAllData = async () => {
 </script>
 
 <style scoped>
+/* ========== 包豪斯现代风格 - 设置页面 ========== */
+
 .settings-view {
-  padding: var(--spacing-lg) 0;
-  max-width: 800px;
+  padding: var(--spacing-3xl) 0;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 900px;
   margin: 0 auto;
+  padding: 0 var(--spacing-xl);
 }
 
+.container > h1 {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-3xl);
+  text-align: center;
+  position: relative;
+}
+
+.container > h1::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent-yellow), var(--color-accent-red));
+  border-radius: var(--radius-full);
+}
+
+/* 区块样式 */
 .section {
-  margin-bottom: var(--spacing-xl);
-  padding: var(--spacing-md);
-  background-color: var(--color-white);
-  border: 1px solid var(--color-gray);
+  margin-bottom: var(--spacing-2xl);
+  padding: var(--spacing-2xl);
+  background: var(--color-bg-primary);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
 }
 
+.section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--color-primary);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--transition-base);
+}
+
+.section:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.section:hover::before {
+  transform: scaleX(1);
+}
+
+/* 强调色区块 */
+.section.accent-red::before {
+  background: linear-gradient(90deg, var(--color-accent-red), var(--color-accent-yellow));
+}
+
+.section.accent-blue::before {
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent-teal));
+}
+
+.section h2 {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-xl);
+  position: relative;
+  padding-left: var(--spacing-md);
+}
+
+.section h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 24px;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+
+/* 表单组 */
 .form-group {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  border: none;
+  outline: none;
 }
 
 .form-group:last-of-type {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
 }
 
 label {
   display: block;
-  margin-bottom: var(--spacing-xs);
-  font-weight: 700;
+  margin-bottom: var(--spacing-md);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
   text-transform: uppercase;
-  font-size: 14px;
+  letter-spacing: 0.5px;
 }
 
+/* 输入框样式 */
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+input[type="text"]:hover,
+input[type="password"]:hover {
+  border-color: var(--color-border-hover);
+  background: var(--color-bg-primary);
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+  border-color: var(--color-primary);
+  background: var(--color-bg-primary);
+  box-shadow: 0 0 0 4px var(--color-primary-light);
+}
+
+/* 强制覆盖 range 输入的样式 - 移除所有边框 */
+input[type="range"] {
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+input[type="range"]:focus {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* API Key 输入 */
 .api-key-input {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
+  align-items: stretch;
 }
 
 .api-key-input input {
   flex: 1;
 }
 
+.api-key-input button {
+  padding: var(--spacing-md) var(--spacing-xl);
+  white-space: nowrap;
+}
+
+/* 复选框 */
 .checkbox-label {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
   text-transform: none;
   font-weight: 500;
   cursor: pointer;
+  padding: var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+}
+
+.checkbox-label:hover {
+  border-color: var(--color-primary);
+  background: var(--color-bg-primary);
 }
 
 .checkbox-label input[type="checkbox"] {
-  width: auto;
+  width: 20px;
+  height: 20px;
   cursor: pointer;
+  accent-color: var(--color-primary);
 }
 
+/* 滑块外层容器 - 创建可见轨道 */
+.range-wrapper {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  margin: var(--spacing-lg) 0;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 在wrapper上创建可见的轨道背景 - 包豪斯简洁风格 */
+.range-wrapper::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 4px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-full);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* 滑块输入框本身 */
+.custom-range {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 100%;
+  height: 40px;
+  background: transparent !important;
+  outline: none !important;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.custom-range:focus {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 移除默认轨道样式 */
+.custom-range::-webkit-slider-runnable-track {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 100%;
+  height: 4px;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.custom-range::-moz-range-track {
+  width: 100%;
+  height: 4px;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 滑块按钮 - Chrome/Safari - 包豪斯现代风格 */
+.custom-range::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 20px;
+  height: 20px;
+  background: var(--color-primary);
+  border: none !important;
+  outline: none !important;
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
+  transition: all var(--transition-fast);
+  margin-top: -8px;
+  position: relative;
+}
+
+.custom-range::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 3px 10px rgba(52, 152, 219, 0.4);
+  background: var(--color-primary-hover);
+}
+
+.custom-range::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.5);
+}
+
+/* 滑块按钮 - Firefox - 包豪斯现代风格 */
+.custom-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--color-primary);
+  border: none !important;
+  outline: none !important;
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
+  transition: all var(--transition-fast);
+  margin-top: 0;
+}
+
+.custom-range::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 3px 10px rgba(52, 152, 219, 0.4);
+  background: var(--color-primary-hover);
+}
+
+.custom-range::-moz-range-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.5);
+}
+
+/* 提示文本 */
 .hint {
-  margin-top: var(--spacing-xs);
-  font-size: 12px;
-  color: var(--color-gray-dark);
-  line-height: 1.5;
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  background: var(--color-bg-secondary);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-md);
 }
 
 .hint a {
-  color: var(--color-blue);
-  border-bottom-color: var(--color-blue);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color var(--transition-fast);
 }
 
-input[type="range"] {
-  width: 100%;
-  padding: 0;
+.hint a:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+/* 按钮样式 */
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
   border: none;
-  background: transparent;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  color: white;
+  box-shadow: var(--shadow-primary);
 }
 
+button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+button:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+button:hover:not(:disabled) {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+button.secondary {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: 2px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+button.secondary:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+
+button.delete-btn {
+  background: var(--color-bg-primary);
+  color: var(--color-accent-red);
+  border: 2px solid var(--color-accent-red);
+  box-shadow: var(--shadow-accent-red);
+}
+
+button.delete-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--color-accent-red) 0%, #c0392b 100%);
+  color: white;
+  border-color: var(--color-accent-red);
+  box-shadow: var(--shadow-lg);
+}
+
+/* 操作网格 */
 .actions-grid {
   display: grid;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-xl);
 }
 
 .actions-grid > div {
-  padding-bottom: var(--spacing-lg);
-  border-bottom: 1px solid var(--color-gray);
+  padding: var(--spacing-xl);
+  background: var(--color-bg-secondary);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
 }
 
-.actions-grid > div:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+.actions-grid > div:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .actions-grid h3 {
-  margin-bottom: var(--spacing-xs);
-  font-size: 16px;
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .actions-grid p {
-  margin-bottom: var(--spacing-sm);
-  color: var(--color-gray-dark);
-  font-size: 14px;
+  margin: 0 0 var(--spacing-lg);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
 }
 
-.delete-btn {
-  background-color: var(--color-white);
-  color: var(--color-red);
-  border-color: var(--color-red);
+/* 关于部分 */
+.section p {
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-md);
 }
 
-.delete-btn:hover {
-  background-color: var(--color-red);
-  color: var(--color-white);
+.section p:last-child {
+  margin-bottom: 0;
+}
+
+.section p strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.section p a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color var(--transition-fast);
+}
+
+.section p a:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+.mt-sm {
+  margin-top: var(--spacing-md);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .settings-view {
+    padding: var(--spacing-2xl) 0;
+  }
+
+  .container {
+    padding: 0 var(--spacing-md);
+  }
+
+  .container > h1 {
+    font-size: var(--font-size-2xl);
+  }
+
+  .section {
+    padding: var(--spacing-xl);
+  }
+
+  .api-key-input {
+    flex-direction: column;
+  }
+
+  .api-key-input button {
+    width: 100%;
+  }
 }
 </style>

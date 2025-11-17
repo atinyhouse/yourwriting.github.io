@@ -3,8 +3,8 @@
     <!-- 侧边栏：对话列表 -->
     <aside class="sidebar" :class="{ 'is-open': sidebarOpen }">
       <div class="sidebar-header">
-        <h2>CONVERSATIONS</h2>
-        <button @click="toggleSidebar" class="icon-btn close-btn" aria-label="Close">
+        <h2>对话列表</h2>
+        <button @click="toggleSidebar" class="icon-btn close-btn" aria-label="关闭">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2"/>
           </svg>
@@ -16,7 +16,7 @@
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M8 3V13M3 8H13" stroke="currentColor" stroke-width="2"/>
         </svg>
-        NEW CHAT
+        新对话
       </button>
 
       <!-- 搜索 -->
@@ -24,7 +24,7 @@
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Search..."
+          placeholder="搜索..."
           @input="filterConversations"
           class="search-input"
         />
@@ -45,7 +45,7 @@
           <button
             @click.stop="deleteConversation(conv.id)"
             class="icon-btn delete-btn"
-            aria-label="Delete"
+            aria-label="删除"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.5"/>
@@ -54,7 +54,7 @@
         </div>
 
         <div v-if="filteredConversations.length === 0" class="empty-state">
-          <p>{{ searchQuery ? 'No results' : 'No conversations yet' }}</p>
+          <p>{{ searchQuery ? '无搜索结果' : '还没有对话' }}</p>
         </div>
       </div>
 
@@ -69,7 +69,7 @@
             <path d="M3 5H17M3 10H17M3 15H17" stroke="currentColor" stroke-width="2"/>
           </svg>
         </button>
-        <h1 class="chat-title">{{ currentConversation?.title || 'New Chat' }}</h1>
+        <h1 class="chat-title">{{ currentConversation?.title || '新对话' }}</h1>
         <button
           @click="clearCurrentChat"
           class="icon-btn clear-btn"
@@ -91,11 +91,11 @@
               <path d="M20 28H44M20 36H36" stroke="currentColor" stroke-width="3"/>
             </svg>
           </div>
-          <h2>Start a Conversation</h2>
-          <p>Type your writing request below</p>
+          <h2>开始对话</h2>
+          <p>在下方输入您的写作需求</p>
           <div v-if="!hasStyleLibrary" class="warning-box">
-            <p>⚠ No style library yet</p>
-            <router-link to="/style-library" class="link">Build your style →</router-link>
+            <p>⚠ 还未建立文风库</p>
+            <router-link to="/style-library" class="link">建立文风库 →</router-link>
           </div>
         </div>
 
@@ -143,7 +143,7 @@
           <textarea
             v-model="userInput"
             @keydown.enter.prevent="handleSend"
-            placeholder="Type your message..."
+            placeholder="输入您的消息..."
             :disabled="isLoading"
             rows="1"
             class="input-field"
@@ -226,7 +226,7 @@ watch(() => currentConversation.value?.messages.length, () => {
 })
 
 const createNewConversation = async () => {
-  const newConv = await createConversation('New Chat')
+  const newConv = await createConversation('新对话')
   conversations.value = await getConversations()
   filteredConversations.value = conversations.value
   currentConversationId.value = newConv.id
@@ -250,7 +250,7 @@ const switchConversation = async (conversationId) => {
 }
 
 const deleteConversation = async (conversationId) => {
-  if (!confirm('Delete this conversation?')) return
+  if (!confirm('确定要删除这个对话吗？')) return
 
   await deleteConversationFromStorage(conversationId)
   conversations.value = await getConversations()
@@ -267,13 +267,13 @@ const deleteConversation = async (conversationId) => {
 
 const clearCurrentChat = async () => {
   if (!currentConversation.value) return
-  if (!confirm('Clear all messages in this conversation?')) return
+  if (!confirm('确定要清空这个对话的所有消息吗？')) return
 
   currentConversation.value.messages = []
   // 转换为纯对象避免 IndexedDB 克隆错误
   await updateConversation(currentConversationId.value, {
     messages: [],
-    title: 'New Chat'
+    title: '新对话'
   })
   conversations.value = await getConversations()
   filteredConversations.value = conversations.value
@@ -339,14 +339,23 @@ const handleSend = async () => {
     styleLibrary.value = await getStyleLibrary()
 
     let styleDescription = ''
+    let styleSamples = []
     if (settings.value.enableStyleTransfer && styleLibrary.value.analysis) {
       styleDescription = generateStyleDescription(styleLibrary.value.analysis)
+
+      // 提取文风样本用于 few-shot learning（最多3个样本）
+      if (styleLibrary.value.sources && styleLibrary.value.sources.length > 0) {
+        styleSamples = styleLibrary.value.sources
+          .slice(0, 3)
+          .map(source => source.content)
+      }
     }
 
     const promptMessages = buildStyledPrompt(
       currentConversation.value.messages,
       styleDescription,
-      settings.value.enableStyleTransfer
+      settings.value.enableStyleTransfer,
+      styleSamples
     )
 
     const tempAiMessage = {
@@ -379,7 +388,7 @@ const handleSend = async () => {
     console.error('API error:', error)
     const errorMessage = {
       role: 'system',
-      content: `Error: ${error.message}`
+      content: `错误: ${error.message}`
     }
     await addMessageToConversation(currentConversationId.value, errorMessage)
     currentConversation.value = await getConversation(currentConversationId.value)
@@ -405,7 +414,7 @@ const exportConversations = async () => {
     URL.revokeObjectURL(url)
   } catch (error) {
     console.error('Export failed:', error)
-    alert('Export failed: ' + error.message)
+    alert('导出失败: ' + error.message)
   }
 }
 
@@ -422,14 +431,14 @@ const importConversations = async (event) => {
     const data = JSON.parse(text)
 
     if (data.version !== '1.0') {
-      throw new Error('Unsupported file version')
+      throw new Error('不支持的文件版本')
     }
 
     if (!Array.isArray(data.conversations)) {
-      throw new Error('Invalid file format')
+      throw new Error('无效的文件格式')
     }
 
-    if (!confirm(`Import ${data.conversations.length} conversations?\n\nThis will replace all current conversations.`)) return
+    if (!confirm(`导入 ${data.conversations.length} 个对话？\n\n这将替换所有当前对话。`)) return
 
     const { saveConversations } = await import('../utils/storage')
     await saveConversations(data.conversations)
@@ -441,10 +450,10 @@ const importConversations = async (event) => {
       await switchConversation(conversations.value[0].id)
     }
 
-    alert('Import successful!')
+    alert('导入成功！')
   } catch (error) {
     console.error('Import failed:', error)
-    alert('Import failed: ' + error.message)
+    alert('导入失败: ' + error.message)
   } finally {
     event.target.value = ''
   }
@@ -472,11 +481,11 @@ const formatDate = (timestamp) => {
     const yesterday = new Date(now)
     yesterday.setDate(yesterday.getDate() - 1)
     if (date.getDate() === yesterday.getDate()) {
-      return 'Yesterday'
+      return '昨天'
     }
   }
 
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return date.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })
 }
 
 const renderMarkdown = (content) => {

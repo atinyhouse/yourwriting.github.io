@@ -366,6 +366,142 @@
             </div>
           </div>
 
+          <!-- 🆕 意象系统 -->
+          <div v-if="library.analysis.imagerySystem" class="analysis-section">
+            <h3 class="analysis-section-title">🎭 意象系统</h3>
+            <div class="taste-content">
+              <div v-if="library.analysis.imagerySystem.recurringObjects?.length" class="taste-item">
+                <div class="taste-label">反复出现的物品</div>
+                <div class="tags-list">
+                  <span v-for="obj in library.analysis.imagerySystem.recurringObjects" :key="obj" class="tag tag-primary">
+                    {{ obj }}
+                  </span>
+                </div>
+              </div>
+              <div v-if="library.analysis.imagerySystem.recurringScenes?.length" class="taste-item">
+                <div class="taste-label">反复出现的场景</div>
+                <div class="tags-list">
+                  <span v-for="scene in library.analysis.imagerySystem.recurringScenes" :key="scene" class="tag tag-primary">
+                    {{ scene }}
+                  </span>
+                </div>
+              </div>
+              <div v-if="library.analysis.imagerySystem.recurringActivities?.length" class="taste-item">
+                <div class="taste-label">反复出现的活动</div>
+                <div class="tags-list">
+                  <span v-for="activity in library.analysis.imagerySystem.recurringActivities" :key="activity" class="tag tag-primary">
+                    {{ activity }}
+                  </span>
+                </div>
+              </div>
+              <div v-if="library.analysis.imagerySystem.symbolicMeanings" class="taste-item">
+                <div class="taste-label">象征意义</div>
+                <div class="taste-description">
+                  {{ library.analysis.imagerySystem.symbolicMeanings }}
+                </div>
+              </div>
+              <div v-if="library.analysis.imagerySystem.description" class="taste-description">
+                {{ library.analysis.imagerySystem.description }}
+              </div>
+            </div>
+          </div>
+
+          <!-- 🆕 比喻风格 -->
+          <div v-if="library.analysis.metaphorStyle" class="analysis-section">
+            <h3 class="analysis-section-title">🌟 比喻风格</h3>
+            <div class="analysis-grid">
+              <div class="analysis-card">
+                <div class="card-label">比喻类型</div>
+                <div class="card-value">{{ getMetaphorTypeLabel(library.analysis.metaphorStyle.type) }}</div>
+              </div>
+              <div class="analysis-card">
+                <div class="card-label">使用频率</div>
+                <div class="card-value">{{ getFrequencyLabel(library.analysis.metaphorStyle.frequency) }}</div>
+              </div>
+            </div>
+            <div v-if="library.analysis.metaphorStyle.examples?.length" class="taste-content">
+              <div class="taste-item">
+                <div class="taste-label">典型例子</div>
+                <div class="metaphor-examples">
+                  <div v-for="(example, index) in library.analysis.metaphorStyle.examples" :key="index" class="metaphor-example">
+                    「{{ example }}」
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-if="library.analysis.metaphorStyle.characteristics" class="taste-description">
+              {{ library.analysis.metaphorStyle.characteristics }}
+            </div>
+          </div>
+
+          <!-- 🆕 情感基调 -->
+          <div v-if="library.analysis.emotionalTone" class="analysis-section">
+            <h3 class="analysis-section-title">💫 情感基调</h3>
+            <div class="analysis-grid">
+              <div class="analysis-card">
+                <div class="card-label">主导情绪</div>
+                <div class="card-value">{{ getEmotionalToneLabel(library.analysis.emotionalTone.dominant) }}</div>
+              </div>
+              <div class="analysis-card">
+                <div class="card-label">情感强度</div>
+                <div class="card-value">{{ getIntensityLabel(library.analysis.emotionalTone.intensity) }}</div>
+              </div>
+            </div>
+            <div v-if="library.analysis.emotionalTone.description" class="taste-description">
+              {{ library.analysis.emotionalTone.description }}
+            </div>
+          </div>
+
+          <!-- 🆕 叙述结构 -->
+          <div v-if="library.analysis.narrativeStructure" class="analysis-section">
+            <h3 class="analysis-section-title">📚 叙述结构</h3>
+            <div class="expression-grid">
+              <div class="expression-item">
+                <div class="expression-label">对话占比</div>
+                <div class="expression-value">{{ getRatioLabel(library.analysis.narrativeStructure.dialogueRatio) }}</div>
+                <div v-if="library.analysis.narrativeStructure.dialogueStyle" class="expression-description">
+                  {{ library.analysis.narrativeStructure.dialogueStyle }}
+                </div>
+              </div>
+              <div class="expression-item">
+                <div class="expression-label">时间处理</div>
+                <div class="expression-value">{{ getTimeHandlingLabel(library.analysis.narrativeStructure.timeHandling) }}</div>
+                <div v-if="library.analysis.narrativeStructure.timeDescription" class="expression-description">
+                  {{ library.analysis.narrativeStructure.timeDescription }}
+                </div>
+              </div>
+              <div class="expression-item">
+                <div class="expression-label">叙述节奏</div>
+                <div class="expression-value">{{ getPaceLabel(library.analysis.narrativeStructure.narrativePace) }}</div>
+                <div v-if="library.analysis.narrativeStructure.paceDescription" class="expression-description">
+                  {{ library.analysis.narrativeStructure.paceDescription }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 🆕 节奏特征 -->
+          <div v-if="library.analysis.rhythmFeatures" class="analysis-section">
+            <h3 class="analysis-section-title">🎵 节奏特征</h3>
+            <div class="analysis-grid">
+              <div class="analysis-card">
+                <div class="card-label">段落长度</div>
+                <div class="card-value">{{ getParagraphLengthLabel(library.analysis.rhythmFeatures.paragraphLength) }}</div>
+              </div>
+              <div class="analysis-card">
+                <div class="card-label">节奏感</div>
+                <div class="card-value">{{ getPacingLabel(library.analysis.rhythmFeatures.pacing) }}</div>
+              </div>
+              <div class="analysis-card">
+                <div class="card-label">细节密度</div>
+                <div class="card-value">{{ getDetailDensityLabel(library.analysis.rhythmFeatures.detailDensity) }}</div>
+              </div>
+            </div>
+            <div v-if="library.analysis.rhythmFeatures.description" class="taste-description">
+              {{ library.analysis.rhythmFeatures.description }}
+            </div>
+          </div>
+
           <!-- 写作指南 -->
           <div v-if="library.analysis.writingGuidance" class="analysis-section guidance-section">
             <h3 class="analysis-section-title">📖 写作指南</h3>
@@ -940,460 +1076,567 @@ const getTimeOrientationLabel = (orientation) => {
   return map[orientation] || orientation
 }
 
+// 🆕 新增分析维度的label转换函数
+const getMetaphorTypeLabel = (type) => {
+  const map = {
+    abstract: '抽象型',
+    concrete: '具象型',
+    surreal: '超现实',
+    poetic: '诗意型'
+  }
+  return map[type] || type
+}
+
+const getFrequencyLabel = (frequency) => {
+  const map = {
+    low: '偶尔使用',
+    medium: '适度使用',
+    high: '频繁使用'
+  }
+  return map[frequency] || frequency
+}
+
+const getEmotionalToneLabel = (dominant) => {
+  const map = {
+    melancholic: '忧郁型',
+    cheerful: '明快型',
+    neutral: '中性客观',
+    ironic: '讽刺型',
+    tender: '温柔型',
+    restrained: '克制型'
+  }
+  return map[dominant] || dominant
+}
+
+const getIntensityLabel = (intensity) => {
+  const map = {
+    subtle: '细腻微妙',
+    moderate: '适度表达',
+    intense: '强烈浓郁'
+  }
+  return map[intensity] || intensity
+}
+
+const getRatioLabel = (ratio) => {
+  const map = {
+    low: '较少（偏重叙述）',
+    medium: '适中（对话与叙述均衡）',
+    high: '较多（对话驱动）'
+  }
+  return map[ratio] || ratio
+}
+
+const getTimeHandlingLabel = (handling) => {
+  const map = {
+    linear: '线性叙述',
+    flashback: '闪回插叙',
+    interweaved: '交织编织'
+  }
+  return map[handling] || handling
+}
+
+const getPaceLabel = (pace) => {
+  const map = {
+    slow: '缓慢悠长',
+    moderate: '适中平稳',
+    fast: '快速紧凑'
+  }
+  return map[pace] || pace
+}
+
+const getParagraphLengthLabel = (length) => {
+  const map = {
+    short: '短段落',
+    medium: '中等段落',
+    long: '长段落',
+    varied: '长短交替'
+  }
+  return map[length] || length
+}
+
+const getPacingLabel = (pacing) => {
+  const map = {
+    deliberate: '从容不迫',
+    flowing: '流畅自然',
+    staccato: '断续跳跃'
+  }
+  return map[pacing] || pacing
+}
+
+const getDetailDensityLabel = (density) => {
+  const map = {
+    sparse: '简练留白',
+    balanced: '详略得当',
+    rich: '细节丰富'
+  }
+  return map[density] || density
+}
+
 </script>
 
 <style scoped>
+/* ========== 包豪斯现代风格 - 文风库页面 ========== */
+
 .style-library-view {
-  padding: var(--spacing-2xl) 0;
+  padding: var(--spacing-3xl) 0;
+  min-height: 100vh;
+}
+
+/* 容器 */
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-xl);
+}
+
+/* 页面头部 */
+.page-header {
+  text-align: center;
+  margin-bottom: var(--spacing-4xl);
+  position: relative;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent-yellow), var(--color-accent-red));
+  border-radius: var(--radius-full);
+}
+
+.page-header h1 {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+  letter-spacing: -0.5px;
 }
 
 .subtitle {
-  color: var(--color-gray-dark);
-  margin-bottom: var(--spacing-2xl);
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  margin: 0;
+  font-weight: 400;
 }
 
-.section {
-  margin-bottom: var(--spacing-3xl);
-  padding: var(--spacing-xl);
-  background-color: var(--color-white);
-  border: 1px solid var(--color-gray);
+/* 内容区块 */
+.content-section {
+  margin-bottom: var(--spacing-4xl);
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-xl);
-}
-
-.upload-section, .manual-input, .url-input {
-  margin-bottom: var(--spacing-xl);
-  padding-bottom: var(--spacing-xl);
-  border-bottom: 1px solid var(--color-gray);
-}
-
-.upload-section:last-child, .manual-input:last-child, .url-input:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-  margin-bottom: 0;
-}
-
-.button-group {
-  display: flex;
-  gap: var(--spacing-md);
-  flex-wrap: wrap;
-}
-
-.button-group button {
-  flex: 1;
-  min-width: 140px;
-}
-
-.button-group button.accent {
-  background-color: var(--color-blue);
-  color: var(--color-white);
-  border-color: var(--color-blue);
-  font-weight: 700;
-}
-
-.button-group button.accent:hover {
-  background-color: var(--color-black);
-  border-color: var(--color-black);
-}
-
-.batch-progress {
-  padding: var(--spacing-lg);
-  background-color: var(--color-gray-light);
-  border: 1px solid var(--color-gray);
-  margin-bottom: var(--spacing-lg);
-}
-
-.batch-progress h4 {
-  margin-bottom: var(--spacing-md);
-}
-
-.progress-bar {
-  width: 100%;
-  height: 24px;
-  background-color: var(--color-white);
-  border: 2px solid var(--color-black);
-  margin-bottom: var(--spacing-sm);
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background-color: var(--color-blue);
-  transition: width 0.3s ease;
-}
-
-.current-url {
-  font-size: 12px;
-  color: var(--color-gray-dark);
-  margin-bottom: var(--spacing-xs);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.stats {
-  font-size: 14px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.empty-state {
-  text-align: center;
-  padding: var(--spacing-xl);
-  color: var(--color-gray-dark);
-}
-
-.sources-list {
-  display: grid;
-  gap: var(--spacing-md);
-}
-
-.source-item {
-  padding: var(--spacing-md);
-}
-
-.source-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: start;
-  margin-bottom: var(--spacing-sm);
-}
-
-.source-header h3 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.delete-btn {
-  padding: 6px 12px;
-  font-size: 12px;
-  background-color: var(--color-white);
-  color: var(--color-red);
-  border-color: var(--color-red);
-}
-
-.delete-btn:hover {
-  background-color: var(--color-red);
-  color: var(--color-white);
-}
-
-.source-meta {
-  display: flex;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-sm);
-  font-size: 12px;
-  color: var(--color-gray-dark);
-}
-
-.badge {
-  background-color: var(--color-black);
-  color: var(--color-white);
-  padding: 2px 8px;
-  text-transform: uppercase;
-  font-weight: 700;
-}
-
-.source-preview {
-  color: var(--color-gray-dark);
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.analysis-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
-}
-
-.analysis-item {
-  padding: var(--spacing-lg);
-  background-color: var(--color-gray-light);
-  border: 1px solid var(--color-gray);
-  text-align: center;
-}
-
-.analysis-item h4 {
-  margin: 0 0 var(--spacing-xs) 0;
-  font-size: 14px;
-  text-transform: uppercase;
-  color: var(--color-gray-dark);
-}
-
-.analysis-item p {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.analysis-item .number {
-  font-size: 32px;
-  color: var(--color-red);
-}
-
-.keywords, .phrases {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-}
-
-.keyword-tag, .phrase-tag {
-  display: inline-block;
-  padding: 6px 12px;
-  background-color: var(--color-gray-light);
-  border: 1px solid var(--color-gray);
-  font-size: 14px;
-}
-
-/* 新增：深度分析样式 */
-.data-badge {
-  font-size: 12px;
-  color: var(--color-gray-dark);
-  background-color: var(--color-gray-light);
-  padding: 4px 12px;
-  border: 1px solid var(--color-gray);
-}
-
-.analysis-category {
   margin-bottom: var(--spacing-2xl);
-  padding-bottom: var(--spacing-xl);
-  border-bottom: 2px solid var(--color-gray);
 }
 
-.analysis-category:last-child {
-  border-bottom: none;
+.section-title {
+  font-size: var(--font-size-2xl);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+  position: relative;
+  padding-left: var(--spacing-md);
 }
 
-.analysis-category h3 {
-  margin-bottom: var(--spacing-lg);
-  font-size: 18px;
-  font-weight: 700;
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 24px;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
 }
 
-.label {
-  font-size: 12px;
-  text-transform: uppercase;
-  color: var(--color-gray-dark);
-  font-weight: 700;
-  margin-bottom: var(--spacing-xs);
-}
-
-.style-grid {
+/* ========== 输入卡片网格 ========== */
+.input-cards {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
+  gap: var(--spacing-xl);
+  margin-bottom: var(--spacing-2xl);
 }
 
-.style-card {
-  padding: var(--spacing-lg);
-  background-color: var(--color-gray-light);
-  border: 2px solid var(--color-black);
-}
-
-.value-large {
-  font-size: 24px;
-  font-weight: 700;
-  margin: var(--spacing-xs) 0;
-}
-
-.hint {
-  font-size: 12px;
-  color: var(--color-gray-dark);
-  font-style: italic;
-}
-
-.complexity-section {
-  padding: var(--spacing-lg);
-  background-color: var(--color-gray-light);
-  border: 1px solid var(--color-gray);
-}
-
-.complexity-bars {
-  display: grid;
-  gap: var(--spacing-md);
-  margin-top: var(--spacing-md);
-}
-
-.complexity-bar {
-  display: grid;
-  grid-template-columns: 80px 1fr;
-  gap: var(--spacing-sm);
-  align-items: center;
-}
-
-.bar-label {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.bar-container {
+.input-card {
+  background: var(--color-bg-primary);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-2xl);
+  transition: all var(--transition-base);
   position: relative;
-  height: 24px;
-  background-color: var(--color-white);
-  border: 2px solid var(--color-black);
+  overflow: hidden;
 }
 
-.bar-fill {
+.input-card::before {
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
-  height: 100%;
-  background-color: var(--color-blue);
-  transition: width 0.5s ease;
+  width: 100%;
+  height: 4px;
+  background: var(--color-primary);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--transition-base);
 }
 
-.bar-value {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 12px;
-  font-weight: 700;
+.input-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
 }
 
-.perspective-section {
-  padding: var(--spacing-lg);
-  background-color: var(--color-gray-light);
-  border: 1px solid var(--color-gray);
+.input-card:hover::before {
+  transform: scaleX(1);
 }
 
-.perspective-main {
-  font-size: 16px;
-  font-weight: 600;
+.input-card.full-width {
+  grid-column: 1 / -1;
+}
+
+.card-icon {
+  font-size: 36px;
   margin-bottom: var(--spacing-lg);
-  padding-bottom: var(--spacing-md);
-  border-bottom: 1px solid var(--color-gray);
+  display: inline-block;
+  animation: bounce 2s ease-in-out infinite;
 }
 
-.perspective-distribution {
-  display: grid;
-  gap: var(--spacing-sm);
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
 
-.person-item {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-}
-
-.person-label {
-  color: var(--color-gray-dark);
-}
-
-.person-value {
-  font-weight: 700;
-}
-
-.opening-section,
-.transitions-section {
-  padding: var(--spacing-lg);
-  background-color: var(--color-white);
-  border: 1px solid var(--color-gray);
-}
-
-.opening-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-lg);
-  margin-top: var(--spacing-md);
-}
-
-.opening-item {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
-  background-color: var(--color-gray-light);
-  border: 1px solid var(--color-gray);
-  text-align: center;
-}
-
-.opening-type {
-  font-size: 12px;
-  color: var(--color-gray-dark);
-  text-transform: uppercase;
-  font-weight: 700;
-}
-
-.opening-count {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.opening-examples {
-  margin-top: var(--spacing-md);
-  padding: var(--spacing-md);
-  background-color: var(--color-gray-light);
-  border-left: 4px solid var(--color-blue);
-}
-
-.example-label {
-  font-size: 12px;
-  color: var(--color-gray-dark);
-  margin-bottom: var(--spacing-sm);
-  font-weight: 700;
-}
-
-.example-text {
-  font-size: 14px;
-  font-style: italic;
-  line-height: 1.6;
-}
-
-.transitions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-md);
-}
-
-.transition-tag {
-  padding: 6px 12px;
-  background-color: var(--color-white);
-  border: 2px solid var(--color-black);
-  font-size: 14px;
+.input-card h3 {
+  font-size: var(--font-size-xl);
   font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-sm);
 }
 
-.transition-tag .count {
-  font-size: 12px;
-  color: var(--color-gray-dark);
-  font-weight: 400;
+.input-card p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--spacing-xl);
 }
 
-/* 分析提示横幅 */
+/* 输入框样式 */
+.card-input,
+.card-textarea {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  outline: none;
+  transition: all var(--transition-fast);
+  margin-bottom: var(--spacing-md);
+}
+
+.card-input::placeholder,
+.card-textarea::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.card-input:hover,
+.card-textarea:hover {
+  border-color: var(--color-border-hover);
+  background: var(--color-bg-primary);
+}
+
+.card-input:focus,
+.card-textarea:focus {
+  border-color: var(--color-primary);
+  background: var(--color-bg-primary);
+  box-shadow: 0 0 0 4px var(--color-primary-light);
+}
+
+.card-textarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: var(--line-height-relaxed);
+}
+
+/* 按钮样式 - 现代包豪斯风格 */
+.card-button,
+.btn-primary,
+.btn-secondary,
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-icon {
+  padding: var(--spacing-sm);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+}
+
+.card-button::before,
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.card-button:hover::before,
+.btn-primary:hover::before {
+  left: 100%;
+}
+
+.card-button,
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  color: white;
+  box-shadow: var(--shadow-primary);
+}
+
+.card-button:hover:not(:disabled),
+.btn-primary:hover:not(:disabled) {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.card-button:active:not(:disabled),
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.card-button:disabled,
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: 2px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-icon {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: var(--color-bg-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ========== 空状态 ========== */
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-4xl) var(--spacing-2xl);
+  background: var(--color-bg-primary);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-xl);
+  margin: var(--spacing-2xl) 0;
+}
+
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: var(--spacing-lg);
+  opacity: 0.5;
+  filter: grayscale(0.5);
+}
+
+.empty-state p {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-sm);
+}
+
+.empty-state span {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
+/* ========== 分析提醒 ========== */
 .analysis-reminder {
   display: flex;
   align-items: center;
   gap: var(--spacing-lg);
-  padding: var(--spacing-lg) var(--spacing-xl);
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-primary);
-  border-radius: var(--radius-md);
+  padding: var(--spacing-xl) var(--spacing-2xl);
+  background: linear-gradient(135deg, var(--color-accent-yellow-light) 0%, var(--color-primary-light) 100%);
+  border: 2px solid var(--color-accent-yellow);
+  border-left-width: 6px;
+  border-radius: var(--radius-xl);
   margin-bottom: var(--spacing-2xl);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
 }
 
 .analysis-reminder svg {
   flex-shrink: 0;
-  color: var(--color-primary);
+  color: var(--color-accent-yellow);
+  filter: drop-shadow(0 2px 4px rgba(243, 156, 18, 0.2));
 }
 
 .analysis-reminder span {
   flex: 1;
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   line-height: var(--line-height-relaxed);
+  font-weight: 500;
 }
 
-/* 分析结果展示 */
+/* ========== 分析徽章 ========== */
+.analysis-badges {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.analysis-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 6px 12px;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.analysis-badge.ai-badge {
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-accent-teal-light) 100%);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* ========== 已导入内容网格 ========== */
+.sources-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--spacing-xl);
+  margin-top: var(--spacing-2xl);
+}
+
+.source-card {
+  background: var(--color-bg-primary);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.source-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-accent-red), var(--color-accent-yellow));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--transition-base);
+}
+
+.source-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+}
+
+.source-card:hover::after {
+  transform: scaleX(1);
+}
+
+.source-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.source-header h3 {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+  flex: 1;
+  line-height: 1.4;
+}
+
+.source-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.source-meta .badge {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent-teal) 100%);
+  color: white;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.source-preview {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ========== 分析结果展示 ========== */
 .analysis-display {
   display: flex;
   flex-direction: column;
@@ -1402,15 +1645,20 @@ const getTimeOrientationLabel = (orientation) => {
 
 .analysis-section {
   background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
   padding: var(--spacing-2xl);
   box-shadow: var(--shadow-sm);
+  transition: all var(--transition-base);
+}
+
+.analysis-section:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .analysis-section-title {
   font-size: var(--font-size-xl);
-  font-weight: 600;
+  font-weight: 700;
   margin: 0 0 var(--spacing-xl);
   color: var(--color-text-primary);
   display: flex;
@@ -1421,97 +1669,114 @@ const getTimeOrientationLabel = (orientation) => {
 /* 概述和指南 */
 .summary-section,
 .guidance-section {
-  background: var(--color-bg-secondary);
-  border-left: 4px solid var(--color-primary);
+  background: linear-gradient(135deg, var(--color-bg-accent) 0%, var(--color-primary-light) 100%);
+  border-color: var(--color-primary);
+  border-left-width: 6px;
 }
 
 .summary-text,
 .guidance-text {
   font-size: var(--font-size-base);
   line-height: var(--line-height-relaxed);
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   margin: 0;
   white-space: pre-wrap;
 }
 
-/* 分析网格 */
+/* 分析卡片网格 */
 .analysis-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
 }
 
 .analysis-card {
   background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-lg);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
   transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.analysis-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 60px;
+  height: 60px;
+  background: var(--color-primary);
+  opacity: 0.05;
+  border-radius: 0 0 0 100%;
 }
 
 .analysis-card:hover {
-  box-shadow: var(--shadow-sm);
-  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
 }
 
 .analysis-card-wide {
   background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-lg);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
 }
 
 .card-label {
   font-size: var(--font-size-xs);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text-tertiary);
   text-transform: uppercase;
   margin-bottom: var(--spacing-sm);
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
 }
 
 .card-value {
   font-size: var(--font-size-lg);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text-primary);
   margin-bottom: var(--spacing-sm);
+  line-height: 1.3;
 }
 
 .card-description {
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
   color: var(--color-text-secondary);
-  margin-top: var(--spacing-sm);
+  margin-top: var(--spacing-md);
 }
 
 /* 视角分析条形图 */
 .perspective-bars {
-  margin-top: var(--spacing-lg);
+  margin-top: var(--spacing-xl);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
 }
 
 .bar-item {
   display: grid;
-  grid-template-columns: 80px 1fr 60px;
+  grid-template-columns: 100px 1fr 60px;
   gap: var(--spacing-md);
   align-items: center;
 }
 
 .bar-label {
   font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--color-text-secondary);
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .bar-track {
   position: relative;
-  height: 24px;
+  height: 32px;
   background: var(--color-bg-tertiary);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   overflow: hidden;
-  border: 1px solid var(--color-border);
+  border: 2px solid var(--color-border);
 }
 
 .bar-fill {
@@ -1519,14 +1784,14 @@ const getTimeOrientationLabel = (orientation) => {
   top: 0;
   left: 0;
   height: 100%;
-  background: var(--color-primary);
-  transition: width 0.5s ease;
-  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent-teal));
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-full);
 }
 
 .bar-value {
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text-primary);
   text-align: right;
 }
@@ -1535,21 +1800,21 @@ const getTimeOrientationLabel = (orientation) => {
 .taste-content {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-xl);
 }
 
 .taste-item {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
 }
 
 .taste-label {
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
 }
 
 .taste-description {
@@ -1562,36 +1827,38 @@ const getTimeOrientationLabel = (orientation) => {
 .tags-list {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
 }
 
 .tag {
   display: inline-flex;
   align-items: center;
-  padding: 6px 12px;
+  padding: 8px 16px;
   background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-full);
   font-size: var(--font-size-sm);
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-text-secondary);
   transition: all var(--transition-fast);
 }
 
 .tag:hover {
-  background: var(--color-bg-hover);
-  border-color: var(--color-border-hover);
-  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .tag-primary {
-  background: var(--color-primary-light);
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-accent-teal-light) 100%);
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
 
 .tag-small {
-  padding: 4px 10px;
+  padding: 6px 12px;
   font-size: var(--font-size-xs);
 }
 
@@ -1599,30 +1866,36 @@ const getTimeOrientationLabel = (orientation) => {
 .expression-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
 }
 
 .expression-item {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
   background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+}
+
+.expression-item:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .expression-label {
   font-size: var(--font-size-xs);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
 }
 
 .expression-value {
   font-size: var(--font-size-base);
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-text-primary);
 }
 
@@ -1632,8 +1905,52 @@ const getTimeOrientationLabel = (orientation) => {
   color: var(--color-text-secondary);
 }
 
-/* 响应式 */
+/* 🆕 比喻例子展示 */
+.metaphor-examples {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.metaphor-example {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-primary);
+  font-style: italic;
+  transition: all var(--transition-fast);
+}
+
+.metaphor-example:hover {
+  background: var(--color-primary-light);
+  border-left-color: var(--color-primary-hover);
+  transform: translateX(4px);
+}
+
+/* ========== 响应式设计 ========== */
+@media (max-width: 1024px) {
+  .input-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
+  .style-library-view {
+    padding: var(--spacing-2xl) 0;
+  }
+
+  .container {
+    padding: 0 var(--spacing-md);
+  }
+
+  .page-header h1 {
+    font-size: var(--font-size-2xl);
+  }
+
   .analysis-grid {
     grid-template-columns: 1fr;
   }
@@ -1643,136 +1960,23 @@ const getTimeOrientationLabel = (orientation) => {
   }
 
   .bar-item {
-    grid-template-columns: 60px 1fr 50px;
+    grid-template-columns: 80px 1fr 50px;
   }
-}
 
-
-.wechat-tip {
-  padding: var(--spacing-md);
-  background-color: #fff8e1;
-  border: 2px solid #ffc107;
-  border-radius: 4px;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.wechat-tip p {
-  margin: 0 0 var(--spacing-xs) 0;
-}
-
-.wechat-tip .tip-content {
-  margin-top: var(--spacing-sm);
-}
-
-.wechat-tip .method-section {
-  margin-bottom: var(--spacing-md);
-  padding: var(--spacing-sm);
-  background-color: rgba(255, 255, 255, 0.5);
-  border-left: 3px solid #ff9800;
-  border-radius: 2px;
-}
-
-.wechat-tip .method-section:last-of-type {
-  margin-bottom: var(--spacing-sm);
-}
-
-.wechat-tip ol,
-.wechat-tip ul {
-  margin: var(--spacing-xs) 0 0 0;
-  padding-left: 24px;
-}
-
-.wechat-tip li {
-  margin: var(--spacing-xs) 0;
-}
-
-.wechat-tip .code-block {
-  background-color: #2d2d2d;
-  color: #f8f8f2;
-  padding: var(--spacing-sm);
-  margin: var(--spacing-xs) 0;
-  font-family: 'Monaco', 'Courier New', monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  overflow-x: auto;
-  border-radius: 4px;
-}
-
-.wechat-tip .note-success {
-  color: #2e7d32;
-  background-color: #e8f5e9;
-  padding: var(--spacing-xs);
-  border-radius: 4px;
-  margin-top: var(--spacing-xs);
-  font-size: 13px;
-}
-
-.wechat-tip .note-info {
-  color: #1565c0;
-  background-color: #e3f2fd;
-  padding: var(--spacing-xs);
-  border-radius: 4px;
-  margin-top: var(--spacing-xs);
-  font-size: 13px;
-}
-
-.wechat-tip .note-warning {
-  color: #e65100;
-  background-color: #fff3e0;
-  padding: var(--spacing-xs);
-  border-radius: 4px;
-  margin-top: var(--spacing-xs);
-  font-size: 13px;
-}
-
-.wechat-tip .final-note {
-  margin-top: var(--spacing-md);
-  padding-top: var(--spacing-sm);
-  border-top: 2px solid #ffc107;
-  font-weight: 600;
-}
-
-.wechat-tip .final-note ul {
-  margin-top: var(--spacing-xs);
-}
-
-.wechat-tip .final-note li {
-  font-weight: 400;
-}
-
-/* 方法切换按钮样式 */
-.method-toggle-btn {
-  transition: all 0.2s ease;
-}
-
-.method-toggle-btn:hover {
-  background: var(--color-gray-light) !important;
-  border-color: var(--color-black) !important;
-}
-
-.method-toggle-btn.active {
-  background: var(--color-black) !important;
-  color: var(--color-white) !important;
-  border-color: var(--color-black) !important;
-}
-
-@media (max-width: 768px) {
-  .analysis-grid {
+  .sources-grid {
     grid-template-columns: 1fr;
   }
+}
 
-  .source-header {
+@media (max-width: 480px) {
+  .section-header {
     flex-direction: column;
-    gap: var(--spacing-sm);
+    align-items: flex-start;
+    gap: var(--spacing-md);
   }
 
-  .style-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .opening-stats {
-    grid-template-columns: 1fr;
+  .analysis-badges {
+    flex-wrap: wrap;
   }
 }
 </style>

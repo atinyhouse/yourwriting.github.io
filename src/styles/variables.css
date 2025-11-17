@@ -1,23 +1,33 @@
 /* Notion-inspired Design System */
 
 :root {
-  /* 颜色系统 - 柔和优雅 */
+  /* 颜色系统 - 包豪斯现代风格 */
   --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f7f6f3;
-  --color-bg-tertiary: #f1f0ed;
-  --color-bg-hover: #f5f4f1;
+  --color-bg-secondary: #fafafa;
+  --color-bg-tertiary: #f5f5f5;
+  --color-bg-hover: #f0f0f0;
+  --color-bg-accent: #f8f9fa;
 
-  --color-text-primary: #37352f;
-  --color-text-secondary: #787774;
-  --color-text-tertiary: #9b9a97;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #666666;
+  --color-text-tertiary: #999999;
 
-  --color-border: #e9e9e7;
-  --color-border-hover: #d3d3d1;
+  --color-border: #e5e5e5;
+  --color-border-hover: #cccccc;
 
-  /* 强调色 - 柔和的蓝色 */
-  --color-primary: #2383e2;
-  --color-primary-light: #e5f2ff;
-  --color-primary-hover: #1a6ec7;
+  /* 包豪斯原色系 */
+  --color-primary: #3498DB;
+  --color-primary-light: #eaf4fc;
+  --color-primary-hover: #2980B9;
+
+  --color-accent-red: #E74C3C;
+  --color-accent-red-light: #fdecea;
+
+  --color-accent-yellow: #F39C12;
+  --color-accent-yellow-light: #fef5e7;
+
+  --color-accent-teal: #16A085;
+  --color-accent-teal-light: #e8f6f3;
 
   /* 功能色 */
   --color-success: #0f7b6c;
@@ -27,26 +37,35 @@
   --color-error: #e03e3e;
   --color-error-light: #fce4e4;
 
-  /* 圆角 */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
+  /* 圆角 - 包豪斯现代化 */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+  --radius-full: 9999px;
 
-  /* 间距 */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 24px;
-  --spacing-2xl: 32px;
-  --spacing-3xl: 48px;
+  /* 间距 - 增加空间感 */
+  --spacing-xs: 6px;
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+  --spacing-4xl: 96px;
 
-  /* 阴影 - 柔和精致 */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.16);
+  /* 阴影 - 层次分明 */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.15);
+  --shadow-2xl: 0 24px 64px rgba(0, 0, 0, 0.18);
+
+  /* 包豪斯彩色阴影 */
+  --shadow-primary: 0 4px 16px rgba(52, 152, 219, 0.15);
+  --shadow-accent-red: 0 4px 16px rgba(231, 76, 60, 0.15);
+  --shadow-accent-yellow: 0 4px 16px rgba(243, 156, 18, 0.15);
 
   /* 字体 */
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";

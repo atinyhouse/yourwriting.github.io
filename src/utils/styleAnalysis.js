@@ -596,6 +596,38 @@ ${sampleText}
     "keywordThemes": ["关键词1", "关键词2", "关键词3"],
     "punctuationStyle": "标点使用习惯的描述"
   },
+  "imagerySystem": {
+    "recurringObjects": ["反复出现的物品1", "物品2", "物品3"],
+    "recurringScenes": ["反复出现的场景1", "场景2"],
+    "recurringActivities": ["反复出现的活动1", "活动2"],
+    "symbolicMeanings": "这些意象的象征意义分析",
+    "description": "意象系统的整体描述（例如：村上春树式的井、猫、爵士乐）"
+  },
+  "metaphorStyle": {
+    "type": "abstract | concrete | surreal | poetic",
+    "examples": ["典型比喻例子1", "例子2", "例子3"],
+    "characteristics": "比喻风格的特点描述（如：喜欢用看似不相关的事物对比）",
+    "frequency": "low | medium | high"
+  },
+  "emotionalTone": {
+    "dominant": "melancholic | cheerful | neutral | ironic | tender | restrained",
+    "intensity": "subtle | moderate | intense",
+    "description": "情感基调的详细描述（如：淡淡的忧伤、克制的情感表达）"
+  },
+  "narrativeStructure": {
+    "dialogueRatio": "low | medium | high",
+    "dialogueStyle": "对话风格的描述（简短直接 vs 长篇对谈）",
+    "timeHandling": "linear | flashback | interweaved",
+    "timeDescription": "时间处理方式的描述（如：经常插入回忆、时间线跳跃）",
+    "narrativePace": "slow | moderate | fast",
+    "paceDescription": "叙述节奏的描述（如：大量日常细节描写、快速切换场景）"
+  },
+  "rhythmFeatures": {
+    "paragraphLength": "short | medium | long | varied",
+    "pacing": "deliberate | flowing | staccato",
+    "detailDensity": "sparse | balanced | rich",
+    "description": "节奏特征的整体描述"
+  },
   "overallSummary": "整体文风的综合描述（200-300字）",
   "writingGuidance": "模仿这种文风时的具体建议（200-300字）"
 }
@@ -604,7 +636,8 @@ ${sampleText}
 1. 请提供深入、细致的分析，而不是简单的分类
 2. 所有描述字段都要具体、有洞察力
 3. 基于文本证据进行推断，而非臆测
-4. 返回纯JSON格式，不要包含任何其他文字或markdown标记`
+4. 新增的意象系统、比喻风格、情感基调、叙述结构、节奏特征是理解作者独特风格的关键
+5. 返回纯JSON格式，不要包含任何其他文字或markdown标记`
 
   try {
     const response = await chatWithDeepSeek(
@@ -862,6 +895,44 @@ export const generateStyleDescription = (analysis) => {
   const themes = analysis.themes || {}
   const coreThemesText = themes.coreThemes?.slice(0, 3).map(t => typeof t === 'string' ? t : t.name).join('、') || '未明确'
 
+  // 🆕 意象系统
+  const imagerySystem = analysis.imagerySystem || {}
+  const imageryDesc = imagerySystem.recurringObjects?.length > 0 || imagerySystem.recurringScenes?.length > 0 || imagerySystem.recurringActivities?.length > 0
+    ? `\n\n9️⃣ 意象系统（标志性元素）\n` +
+      (imagerySystem.recurringObjects?.length > 0 ? `- 反复出现的物品：${imagerySystem.recurringObjects.slice(0, 5).join('、')}\n` : '') +
+      (imagerySystem.recurringScenes?.length > 0 ? `- 反复出现的场景：${imagerySystem.recurringScenes.slice(0, 5).join('、')}\n` : '') +
+      (imagerySystem.recurringActivities?.length > 0 ? `- 反复出现的活动：${imagerySystem.recurringActivities.slice(0, 5).join('、')}\n` : '') +
+      (imagerySystem.symbolicMeanings ? `- 象征意义：${imagerySystem.symbolicMeanings}\n` : '')
+    : ''
+
+  // 🆕 比喻风格
+  const metaphorStyle = analysis.metaphorStyle || {}
+  const metaphorDesc = metaphorStyle.type
+    ? `\n🔟 比喻风格\n` +
+      `- 类型：${metaphorStyle.type === 'abstract' ? '抽象型' : metaphorStyle.type === 'concrete' ? '具象型' : metaphorStyle.type === 'surreal' ? '超现实' : '诗意型'}\n` +
+      (metaphorStyle.examples?.length > 0 ? `- 典型例子：\n${metaphorStyle.examples.slice(0, 3).map(e => `  · "${e}"`).join('\n')}\n` : '') +
+      (metaphorStyle.characteristics ? `- 特点：${metaphorStyle.characteristics}\n` : '')
+    : ''
+
+  // 🆕 情感基调
+  const emotionalTone = analysis.emotionalTone || {}
+  const emotionalDesc = emotionalTone.dominant
+    ? `\n1️⃣1️⃣ 情感基调\n` +
+      `- 主导情绪：${emotionalTone.dominant === 'melancholic' ? '忧郁型' : emotionalTone.dominant === 'cheerful' ? '明快型' : emotionalTone.dominant === 'ironic' ? '讽刺型' : emotionalTone.dominant === 'tender' ? '温柔型' : emotionalTone.dominant === 'restrained' ? '克制型' : '中性'}\n` +
+      `- 情感强度：${emotionalTone.intensity === 'subtle' ? '细腻微妙' : emotionalTone.intensity === 'intense' ? '强烈浓郁' : '适度表达'}\n` +
+      (emotionalTone.description ? `- 描述：${emotionalTone.description}\n` : '')
+    : ''
+
+  // 🆕 叙述结构
+  const narrativeStructure = analysis.narrativeStructure || {}
+  const narrativeDesc = narrativeStructure.dialogueRatio
+    ? `\n1️⃣2️⃣ 叙述结构\n` +
+      `- 对话占比：${narrativeStructure.dialogueRatio === 'low' ? '较少（偏重叙述）' : narrativeStructure.dialogueRatio === 'high' ? '较多（对话驱动）' : '适中'}\n` +
+      (narrativeStructure.dialogueStyle ? `  · 对话风格：${narrativeStructure.dialogueStyle}\n` : '') +
+      `- 时间处理：${narrativeStructure.timeHandling === 'linear' ? '线性叙述' : narrativeStructure.timeHandling === 'flashback' ? '闪回插叙' : '交织编织'}\n` +
+      `- 叙述节奏：${narrativeStructure.narrativePace === 'slow' ? '缓慢悠长' : narrativeStructure.narrativePace === 'fast' ? '快速紧凑' : '适中平稳'}\n`
+    : ''
+
   // Extract tone - handle both AI and regex formats
   const tone = analysis.languageStyle?.tone || analysis.tone || 'neutral'
 
@@ -947,7 +1018,7 @@ ${perspectiveDominant === 'second' ? '- 用第二人称直接对话，增强参�
 - 关注 "${themeWords}" 这些核心主题
 - 核心思想围绕：${coreThemesText}
 ${topPhrases.length > 0 ? `- 尝试使用这些特色表达：${topPhrases.slice(0, 3).join('、')}` : ''}
-
+${imageryDesc}${metaphorDesc}${emotionalDesc}${narrativeDesc}
 📊 数据基础：基于 ${analysis.totalWords?.toLocaleString() || '未知'} 字的文本分析
   `.trim()
 }
