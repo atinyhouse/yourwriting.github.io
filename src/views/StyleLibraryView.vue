@@ -31,20 +31,29 @@
           <div class="input-card">
             <div class="card-icon">🔗</div>
             <h3>从链接导入</h3>
-            <p>粘贴文章 URL 自动提取</p>
+            <p>支持单篇文章或博客首页批量导入</p>
             <input
               v-model="urlInput"
               type="url"
               placeholder="https://..."
               class="card-input"
             />
-            <button
-              @click="handleUrlImport"
-              :disabled="!urlInput.trim() || isLoadingUrl"
-              class="card-button"
-            >
-              {{ isLoadingUrl ? '提取中...' : '导入文章' }}
-            </button>
+            <div class="button-group">
+              <button
+                @click="handleUrlImport"
+                :disabled="!urlInput.trim() || isLoadingUrl"
+                class="card-button secondary"
+              >
+                {{ isLoadingUrl ? '提取中...' : '导入单篇' }}
+              </button>
+              <button
+                @click="handleBatchImport"
+                :disabled="!urlInput.trim() || isLoadingUrl"
+                class="card-button"
+              >
+                {{ isLoadingUrl ? '提取中...' : '📚 批量导入' }}
+              </button>
+            </div>
           </div>
 
           <!-- 手动输入 -->
@@ -71,6 +80,26 @@
             >
               添加到文风库
             </button>
+          </div>
+        </div>
+
+        <!-- 批量导入进度 -->
+        <div v-if="batchProgress.show" class="batch-progress-modal">
+          <div class="progress-card">
+            <h3>📚 批量导入中</h3>
+            <div class="progress-stats">
+              <span>进度: {{ batchProgress.current }} / {{ batchProgress.total }}</span>
+              <span>成功: {{ batchProgress.success }}</span>
+              <span>失败: {{ batchProgress.failed }}</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" :style="{ width: batchProgressPercent + '%' }"></div>
+            </div>
+            <div class="progress-percent">{{ batchProgressPercent }}%</div>
+            <div class="progress-current-url">
+              <span>正在提取:</span>
+              <span class="url-text">{{ batchProgress.currentUrl }}</span>
+            </div>
           </div>
         </div>
       </section>
@@ -1366,6 +1395,17 @@ const getDetailDensityLabel = (density) => {
   line-height: var(--line-height-relaxed);
 }
 
+/* 按钮组 */
+.button-group {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.button-group .card-button {
+  flex: 1;
+}
+
 /* 按钮样式 - 现代包豪斯风格 */
 .card-button,
 .btn-primary,
@@ -1445,10 +1485,22 @@ const getDetailDensityLabel = (density) => {
   box-shadow: var(--shadow-sm);
 }
 
-.btn-secondary:hover:not(:disabled) {
+.btn-secondary:hover:not(:disabled),
+.card-button.secondary:hover:not(:disabled) {
   border-color: var(--color-primary);
   color: var(--color-primary);
   box-shadow: var(--shadow-md);
+}
+
+.card-button.secondary {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: 2px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-button.secondary::before {
+  display: none;
 }
 
 .btn-icon {
@@ -1929,6 +1981,107 @@ const getDetailDensityLabel = (density) => {
   background: var(--color-primary-light);
   border-left-color: var(--color-primary-hover);
   transform: translateX(4px);
+}
+
+/* ========== 批量导入进度条 ========== */
+.batch-progress-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+}
+
+.progress-card {
+  background: var(--color-bg-primary);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-3xl);
+  max-width: 600px;
+  width: 90%;
+  box-shadow: var(--shadow-lg);
+}
+
+.progress-card h3 {
+  margin: 0 0 var(--spacing-xl);
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+.progress-stats {
+  display: flex;
+  justify-content: space-around;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+}
+
+.progress-stats span {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.progress-bar {
+  position: relative;
+  height: 32px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  border: 2px solid var(--color-border);
+  margin-bottom: var(--spacing-md);
+}
+
+.progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent-teal));
+  transition: width 0.3s ease;
+  border-radius: var(--radius-full);
+}
+
+.progress-percent {
+  text-align: center;
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-xl);
+}
+
+.progress-current-url {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border-left: 3px solid var(--color-primary);
+}
+
+.progress-current-url > span:first-child {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+}
+
+.url-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  word-break: break-all;
+  line-height: var(--line-height-relaxed);
 }
 
 /* ========== 响应式设计 ========== */
