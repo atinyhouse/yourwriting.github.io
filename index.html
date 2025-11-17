@@ -6,6 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="AI 文风助手 - 基于个人文风库的智能写作工具" />
     <title>AI 文风助手</title>
+
+    <!-- GitHub Pages SPA redirect solution -->
+    <script>
+      // 从 404.html 重定向回来时恢复 URL
+      (function() {
+        var redirect = sessionStorage.redirect;
+        delete sessionStorage.redirect;
+        if (redirect && redirect !== location.href) {
+          history.replaceState(null, null, redirect);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>
