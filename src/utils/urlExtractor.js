@@ -15,6 +15,32 @@ const CORS_PROXIES = [
 export const fetchWithCORS = async (url, customHeaders = {}) => {
   let lastError = null
 
+  // 🆕 对于 GitHub Pages 和支持 CORS 的网站，先尝试直接获取
+  if (url.includes('github.io')) {
+    try {
+      console.log('检测到 GitHub Pages，尝试直接获取...')
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          ...customHeaders
+        },
+        signal: AbortSignal.timeout(15000)
+      })
+
+      if (response.ok) {
+        const html = await response.text()
+        if (html && html.length > 1000) {
+          console.log('✅ 直接获取成功，长度:', html.length)
+          return html
+        }
+      }
+    } catch (error) {
+      console.log('直接获取失败，尝试使用代理:', error.message)
+      lastError = error
+    }
+  }
+
   // 尝试所有代理
   for (let i = 0; i < CORS_PROXIES.length; i++) {
     const proxy = CORS_PROXIES[i]
@@ -52,8 +78,8 @@ export const fetchWithCORS = async (url, customHeaders = {}) => {
     }
   }
 
-  // 所有代理都失败
-  throw new Error(`所有代理服务都无法访问该链接。\n最后错误：${lastError?.message || '网络错误'}\n\n💡 建议：\n1. 检查网络连接\n2. 使用"直接粘贴内容"功能\n3. 稍后重试`)
+  // 所有方法都失败
+  throw new Error(`无法访问该链接。\n最后错误：${lastError?.message || '网络错误'}\n\n💡 建议：\n1. 检查网络连接\n2. 使用"直接粘贴内容"功能\n3. 稍后重试`)
 }
 
 // 提取微信公众号文章内容（使用 Mozilla Readability 算法）
@@ -573,11 +599,13 @@ export const extractArticleLinks = async (urlOrHtml) => {
 
     let html
     let isWechatPage = false
+    let baseUrl = null // 保存原始URL用于相对路径处理
 
     // 检测输入是 URL 还是 HTML 源代码
     if (urlOrHtml.trim().startsWith('http://') || urlOrHtml.trim().startsWith('https://')) {
       // 输入是 URL
       const url = urlOrHtml.trim()
+      baseUrl = url
       console.log('输入类型：URL -', url)
       isWechatPage = url.includes('mp.weixin.qq.com')
       html = await fetchWithCORS(url)
@@ -671,9 +699,9 @@ export const extractArticleLinks = async (urlOrHtml) => {
         const originalHref = href
 
         // 处理相对路径
-        if (href.startsWith('/')) {
-          const baseUrl = new URL(url)
-          href = baseUrl.origin + href
+        if (baseUrl && href.startsWith('/')) {
+          const urlObj = new URL(baseUrl)
+          href = urlObj.origin + href
         } else if (!href.startsWith('http')) {
           return // 跳过非http链接
         }
