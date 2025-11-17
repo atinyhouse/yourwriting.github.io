@@ -1,12 +1,12 @@
-// DeepSeek API 集成
+// DeepSeek API 集成（使用 Cloudflare Workers 代理）
 
-const API_ENDPOINT = 'https://api.deepseek.com/v1/chat/completions'
+// 使用 Cloudflare Workers 代理（隐藏 API Key）
+const API_ENDPOINT = 'https://deepseek-proxy.lucca-caolu.workers.dev'
 
-// 调用 DeepSeek API
+// 调用 DeepSeek API（通过代理）
 export const callDeepSeekAPI = async (messages, apiKey, params = {}) => {
-  if (!apiKey) {
-    throw new Error('请先配置 DeepSeek API Key')
-  }
+  // 如果使用代理，不需要 API Key
+  // apiKey 参数保留是为了向后兼容
 
   const {
     temperature = 0.7,
@@ -17,8 +17,8 @@ export const callDeepSeekAPI = async (messages, apiKey, params = {}) => {
   const response = await fetch(API_ENDPOINT, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
+      'Content-Type': 'application/json'
+      // 不需要 Authorization，API Key 在 Worker 中
     },
     body: JSON.stringify({
       model: 'deepseek-chat',
