@@ -26,7 +26,15 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    // 如果有保存的滚动位置（浏览器前进/后退），恢复它
+    if (savedPosition) {
+      return savedPosition
+    }
+    // 否则保持当前滚动位置，避免跳到顶部
+    return false
+  }
 })
 
 // 更新页面标题

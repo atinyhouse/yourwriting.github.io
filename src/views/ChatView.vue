@@ -1,7 +1,7 @@
 <template>
-  <div class="chat-view">
+  <div class="chat-view" :class="{ 'initialized': !isInitializing }">
     <!-- 侧边栏：对话列表 -->
-    <aside class="sidebar" :class="{ 'is-open': sidebarOpen }">
+    <aside class="sidebar" :class="{ 'is-open': sidebarOpen, 'ready': !isInitializing }">
       <div class="sidebar-header">
         <h2>对话列表</h2>
         <button @click="toggleSidebar" class="icon-btn close-btn" aria-label="关闭">
@@ -83,8 +83,19 @@
 
       <!-- 消息区域 -->
       <div class="messages-container" ref="messagesContainer">
+        <!-- 加载中骨架屏 -->
+        <div v-if="isInitializing" class="loading-skeleton">
+          <div class="skeleton-message">
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-content">
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line short"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- 空状态 -->
-        <div v-if="!currentConversation || currentConversation.messages.length === 0" class="welcome">
+        <div v-else-if="!currentConversation || currentConversation.messages.length === 0" class="welcome">
           <div class="welcome-icon">
             <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
               <rect x="8" y="8" width="48" height="48" stroke="currentColor" stroke-width="3"/>
@@ -188,6 +199,7 @@ const currentConversationId = ref(null)
 const currentConversation = ref(null)
 const userInput = ref('')
 const isLoading = ref(false)
+const isInitializing = ref(true)  // 添加初始化状态
 const messagesContainer = ref(null)
 const styleLibrary = ref(null)
 const settings = ref(null)
@@ -200,25 +212,34 @@ const hasStyleLibrary = computed(() => {
 })
 
 onMounted(async () => {
-  styleLibrary.value = await getStyleLibrary()
-  settings.value = await getSettings()
-  conversations.value = await getConversations()
-  filteredConversations.value = conversations.value
+  isInitializing.value = true
 
-  const savedConversationId = await getCurrentConversationId()
+  // 并行加载所有数据，提升性能
+  const [styleLib, settingsData, conversationsData, savedConvId] = await Promise.all([
+    getStyleLibrary(),
+    getSettings(),
+    getConversations(),
+    getCurrentConversationId()
+  ])
 
-  if (savedConversationId) {
-    currentConversationId.value = savedConversationId
-    currentConversation.value = await getConversation(savedConversationId)
-  } else if (conversations.value.length > 0) {
-    currentConversationId.value = conversations.value[0].id
-    currentConversation.value = conversations.value[0]
+  styleLibrary.value = styleLib
+  settings.value = settingsData
+  conversations.value = conversationsData
+  filteredConversations.value = conversationsData
+
+  if (savedConvId) {
+    currentConversationId.value = savedConvId
+    currentConversation.value = await getConversation(savedConvId)
+  } else if (conversationsData.length > 0) {
+    currentConversationId.value = conversationsData[0].id
+    currentConversation.value = conversationsData[0]
     await setCurrentConversationId(currentConversationId.value)
   } else {
     await createNewConversation()
   }
 
-  scrollToBottom()
+  // 数据加载完成后再显示内容，避免跳变
+  isInitializing.value = false
 })
 
 watch(() => currentConversation.value?.messages.length, () => {
@@ -246,7 +267,8 @@ const switchConversation = async (conversationId) => {
     sidebarOpen.value = false
   }
 
-  scrollToBottom()
+  // 切换对话时滚动到底部
+  scrollToBottom(true)
 }
 
 const deleteConversation = async (conversationId) => {
@@ -332,7 +354,7 @@ const handleSend = async () => {
   isLoading.value = true
 
   await nextTick()
-  scrollToBottom()
+  scrollToBottom(true)  // 发送消息后强制滚动到底部
 
   try {
     // 重新加载文风库，确保使用最新的分析结果
@@ -372,7 +394,7 @@ const handleSend = async () => {
       settings.value.modelParams,
       (chunk) => {
         tempAiMessage.content += chunk
-        scrollToBottom()
+        scrollToBottom(true)  // AI回复时强制滚动
       }
     )
 
@@ -492,10 +514,17 @@ const renderMarkdown = (content) => {
   return marked(content)
 }
 
-const scrollToBottom = () => {
+const scrollToBottom = (force = false) => {
   nextTick(() => {
     if (messagesContainer.value) {
-      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+      // 只有在用户发送消息或强制滚动时才滚动到底部
+      // 避免页面刷新时的跳变
+      const container = messagesContainer.value
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100
+
+      if (force || isNearBottom) {
+        container.scrollTop = container.scrollHeight
+      }
     }
   })
 }
@@ -505,6 +534,12 @@ const scrollToBottom = () => {
 /* ========== RESET & BASE ========== */
 * {
   box-sizing: border-box;
+}
+
+/* 页面初始化时禁用所有过渡动画，避免跳变 */
+.chat-view:not(.initialized) * {
+  transition: none !important;
+  animation: none !important;
 }
 
 .chat-view {
@@ -524,8 +559,14 @@ const scrollToBottom = () => {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: transform var(--transition-base);
   box-shadow: var(--shadow-sm);
+  /* 初始化时禁用动画，避免跳变 */
+  transition: none;
+}
+
+.sidebar.ready {
+  /* 数据加载完成后启用动画 */
+  transition: transform var(--transition-base);
 }
 
 .sidebar-header {
@@ -765,6 +806,65 @@ const scrollToBottom = () => {
   flex: 1;
   overflow-y: auto;
   padding: var(--spacing-xl);
+}
+
+/* 加载骨架屏 */
+.loading-skeleton {
+  max-width: 900px;
+  margin: var(--spacing-3xl) auto;
+}
+
+.skeleton-message {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.skeleton-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-tertiary) 25%,
+    var(--color-bg-hover) 50%,
+    var(--color-bg-tertiary) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+.skeleton-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.skeleton-line {
+  height: 16px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-tertiary) 25%,
+    var(--color-bg-hover) 50%,
+    var(--color-bg-tertiary) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .welcome {
