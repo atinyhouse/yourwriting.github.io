@@ -3,30 +3,36 @@
     <div class="container">
       <h1>设置</h1>
 
-      <!-- API 配置 -->
-      <div class="section accent-red">
-        <h2>DeepSeek API 配置</h2>
+      <!-- API 说明 -->
+      <div class="section accent-green">
+        <h2>🚀 AI 服务</h2>
 
-        <div class="form-group">
-          <label>API Key</label>
-          <div class="api-key-input">
-            <input
-              v-model="settings.deepseekApiKey"
-              :type="showApiKey ? 'text' : 'password'"
-              placeholder="sk-..."
-            />
-            <button @click="showApiKey = !showApiKey" class="secondary">
-              {{ showApiKey ? '隐藏' : '显示' }}
-            </button>
+        <div class="info-box">
+          <div class="info-icon">✨</div>
+          <div class="info-content">
+            <h3>无需配置，开箱即用</h3>
+            <p>本工具已经内置 DeepSeek AI 服务，您无需申请和配置 API Key，打开即可使用所有功能。</p>
+
+            <div class="features-list">
+              <div class="feature-item">
+                <span class="feature-icon">💬</span>
+                <span>AI 智能对话</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-icon">📝</span>
+                <span>文风分析</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-icon">✍️</span>
+                <span>风格模仿</span>
+              </div>
+            </div>
+
+            <p class="tech-note">
+              <strong>技术说明：</strong>为确保安全，API Key 托管在 Cloudflare Workers 服务器端，您的所有对话数据仅保存在浏览器本地，不会上传到任何服务器。
+            </p>
           </div>
-          <p class="hint">
-            获取 API Key: <a href="https://platform.deepseek.com" target="_blank">https://platform.deepseek.com</a>
-            <br />
-            API Key 仅保存在您的浏览器本地，不会上传到任何服务器
-          </p>
         </div>
-
-        <button @click="saveSettings" :disabled="!hasChanges">保存配置</button>
       </div>
 
       <!-- 模型参数 -->
@@ -141,7 +147,6 @@ import {
 } from '../utils/storage'
 
 const settings = ref({
-  deepseekApiKey: '',
   modelParams: {
     temperature: 0.7,
     maxTokens: 2000
@@ -150,7 +155,6 @@ const settings = ref({
 })
 
 const originalSettings = ref(null)
-const showApiKey = ref(false)
 const hasChanges = ref(false)
 const importInput = ref(null)
 
@@ -309,6 +313,81 @@ const clearAllData = async () => {
 
 .section.accent-blue::before {
   background: linear-gradient(90deg, var(--color-primary), var(--color-accent-teal));
+}
+
+.section.accent-green::before {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+/* 信息提示框 */
+.info-box {
+  display: flex;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-2xl);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(52, 211, 153, 0.05) 100%);
+  border: 2px solid rgba(16, 185, 129, 0.2);
+  border-radius: var(--radius-lg);
+  align-items: flex-start;
+}
+
+.info-icon {
+  font-size: 40px;
+  flex-shrink: 0;
+}
+
+.info-content {
+  flex: 1;
+}
+
+.info-content h3 {
+  margin: 0 0 var(--spacing-md);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.info-content p {
+  margin: 0 0 var(--spacing-lg);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+.features-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.feature-icon {
+  font-size: 20px;
+}
+
+.tech-note {
+  padding: var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-left: 3px solid #10b981;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.tech-note strong {
+  color: var(--color-text-primary);
 }
 
 .section h2 {
