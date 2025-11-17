@@ -171,7 +171,7 @@ export const saveConversations = async (conversations) => {
 // 获取设置
 export const getSettings = async () => {
   const data = await localforage.getItem(KEYS.SETTINGS)
-  return data || {
+  const defaultSettings = {
     deepseekApiKey: 'sk-2302587a10e6420cb091ca73e56b57ca',
     modelParams: {
       temperature: 0.7,
@@ -179,6 +179,18 @@ export const getSettings = async () => {
     },
     enableStyleTransfer: true
   }
+
+  // 如果没有保存的数据，返回默认设置
+  if (!data) {
+    return defaultSettings
+  }
+
+  // 如果有保存的数据但 API Key 为空，使用默认 API Key
+  if (!data.deepseekApiKey || data.deepseekApiKey.trim() === '') {
+    data.deepseekApiKey = defaultSettings.deepseekApiKey
+  }
+
+  return data
 }
 
 // 保存设置
