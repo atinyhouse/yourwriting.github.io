@@ -1,0 +1,17 @@
+# Cloudflare Workers 配置文件
+name = "deepseek-proxy"
+main = "workers/deepseek-proxy.js"
+compatibility_date = "2024-01-01"
+
+# 环境变量（使用 wrangler secret 命令设置）
+# wrangler secret put DEEPSEEK_API_KEY
+
+# 路由配置
+routes = [
+  { pattern = "*/api/chat", custom_domain = true }
+]
+
+# 限制
+[limits]
+# 每分钟请求数限制（防止滥用）
+cpu_ms = 50
