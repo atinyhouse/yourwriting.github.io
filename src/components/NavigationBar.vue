@@ -24,10 +24,8 @@
 
 <style scoped>
 .navbar {
-  background-color: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
@@ -37,11 +35,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-lg) 0;
-  max-width: 1200px;
+  padding: var(--spacing-md) var(--spacing-xl);
+  max-width: 1400px;
   margin: 0 auto;
-  padding-left: var(--spacing-xl);
-  padding-right: var(--spacing-xl);
 }
 
 .logo h1 {
@@ -49,50 +45,40 @@
   font-weight: 600;
   margin: 0;
   color: var(--color-text-primary);
-  letter-spacing: -0.02em;
 }
 
 .nav-links {
   display: flex;
-  gap: var(--spacing-xs);
+  gap: 0;
   align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  background: var(--color-bg-secondary);
 }
 
 .nav-links a {
   position: relative;
-  padding: var(--spacing-sm) var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-xl);
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text-secondary);
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
   text-decoration: none;
-  letter-spacing: -0.01em;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
 }
 
-.nav-links a::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%) scaleX(0);
-  width: calc(100% - var(--spacing-lg) * 2);
-  height: 2px;
-  background: var(--color-primary);
-  border-radius: 2px;
-  transition: transform 0.2s ease;
-}
-
-.nav-links a:hover {
+.nav-links a:hover:not(.active) {
   color: var(--color-text-primary);
+  background: var(--color-bg-hover);
 }
 
 .nav-links a.active {
   color: var(--color-primary);
+  background: var(--color-bg-primary);
   font-weight: 600;
-}
-
-.nav-links a.active::after {
-  transform: translateX(-50%) scaleX(1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 @media (max-width: 768px) {
@@ -101,7 +87,7 @@
   }
 
   .nav-links {
-    gap: var(--spacing-xs);
+    padding: 3px;
   }
 
   .nav-links a {
