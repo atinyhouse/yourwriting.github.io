@@ -527,16 +527,54 @@ export const analyzeStyleWithAI = async (sources, apiKey) => {
   // 动态导入 AI API
   const { chatWithDeepSeek } = await import('./deepseekAPI')
 
-  // 准备分析的样本文本（限制长度以避免token超限）
-  const sampleText = texts.join('\n\n').slice(0, 8000)
+  // 🆕 智能采样策略：优先使用全文，只在必要时采样
   const totalWords = texts.reduce((sum, text) => sum + text.length, 0)
+
+  // DeepSeek-V3 支持 64K tokens，约等于 256K 字符（中文）
+  // 为了安全起见，设置上限为 100K 字符，大部分情况下都能全文分析
+  const targetLength = 100000
+
+  let sampleText = ''
+
+  if (totalWords <= targetLength) {
+    // 如果总字数不超过目标长度，全部使用（推荐！）
+    sampleText = texts.map((text, index) => `【文章 ${index + 1}】\n${text}`).join('\n\n=== 文章分隔 ===\n\n')
+  } else {
+    // 只有在文章非常多/非常长时才智能采样
+    const samplesPerArticle = []
+    const charsPerArticle = Math.floor(targetLength / texts.length)
+
+    texts.forEach((text, index) => {
+      if (text.length <= charsPerArticle) {
+        // 文章够短，全文使用
+        samplesPerArticle.push(`【文章 ${index + 1}】\n${text}`)
+      } else {
+        // 文章较长，提取开头、中间、结尾各一部分
+        const segmentSize = Math.floor(charsPerArticle / 3)
+        const start = text.slice(0, segmentSize)
+        const middle = text.slice(Math.floor(text.length / 2) - segmentSize / 2, Math.floor(text.length / 2) + segmentSize / 2)
+        const end = text.slice(-segmentSize)
+
+        samplesPerArticle.push(`【文章 ${index + 1}（已采样）】\n${start}\n\n[...中间省略...]\n\n${middle}\n\n[...后续省略...]\n\n${end}`)
+      }
+    })
+
+    sampleText = samplesPerArticle.join('\n\n=== 文章分隔 ===\n\n')
+  }
 
   const analysisPrompt = `你是一位专业的文风分析专家。请深度分析以下文本的写作风格，并以JSON格式返回分析结果。
 
-**文本样本（共 ${totalWords} 字）**：
+**文本样本信息**：
+- 总文章数：${texts.length} 篇
+- 总字数：${totalWords.toLocaleString()} 字
+- 采样字数：${sampleText.length.toLocaleString()} 字
+${totalWords > targetLength ? '- 注意：文本已智能采样，每篇文章都提取了开头、中间、结尾的代表性片段\n' : '- 注意：以下是全文内容\n'}
+**文本样本**：
 ${sampleText}
 
 **分析要求**：
+请综合分析以上${texts.length}篇文章的整体风格特征。即使文本经过采样，也请基于提供的样本推断作者的整体写作风格。注意寻找跨文章的一致性特征，而非个别文章的特殊性。
+
 请从以下维度进行深入分析，并以JSON格式返回结果：
 
 {
@@ -633,11 +671,12 @@ ${sampleText}
 }
 
 **重要提示**：
-1. 请提供深入、细致的分析，而不是简单的分类
-2. 所有描述字段都要具体、有洞察力
-3. 基于文本证据进行推断，而非臆测
-4. 新增的意象系统、比喻风格、情感基调、叙述结构、节奏特征是理解作者独特风格的关键
-5. 返回纯JSON格式，不要包含任何其他文字或markdown标记`
+1. 请综合分析所有${texts.length}篇文章，寻找作者一致的风格特征
+2. 提供深入、细致的分析，而不是简单的分类
+3. 所有描述字段都要具体、有洞察力
+4. 基于文本证据进行推断，而非臆测
+5. 意象系统、比喻风格、情感基调、叙述结构、节奏特征是理解作者独特风格的关键
+6. 返回纯JSON格式，不要包含任何其他文字或markdown标记`
 
   try {
     const response = await chatWithDeepSeek(
@@ -645,7 +684,7 @@ ${sampleText}
       apiKey,
       {
         temperature: 0.3, // 较低温度保证分析的一致性
-        maxTokens: 4000
+        maxTokens: 6000  // 增加token限制，支持更详细的分析
       }
     )
 

@@ -61,12 +61,12 @@
               v-model.number="settings.modelParams.maxTokens"
               type="range"
               min="500"
-              max="4000"
-              step="100"
+              max="8192"
+              step="128"
               class="custom-range"
             />
           </div>
-          <p class="hint">每次回复的最大长度。建议: 2000</p>
+          <p class="hint">每次回复的最大长度。DeepSeek-V3 支持最大 8192 tokens。建议: 2000-4000</p>
         </div>
 
         <button @click="saveSettings" :disabled="!hasChanges">保存参数</button>
