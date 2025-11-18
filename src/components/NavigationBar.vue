@@ -25,6 +25,7 @@
 <style scoped>
 .navbar {
   background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
@@ -37,7 +38,6 @@
   padding: var(--spacing-lg) var(--spacing-xl);
   max-width: 1400px;
   margin: 0 auto;
-  border-bottom: 1px solid var(--color-border);
 }
 
 .logo h1 {
