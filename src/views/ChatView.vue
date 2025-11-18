@@ -151,23 +151,28 @@
       <!-- 输入区域 -->
       <div class="input-section">
         <div class="input-wrapper">
-          <textarea
-            v-model="userInput"
-            @keydown.enter.prevent="handleSend"
-            placeholder="输入您的消息..."
-            :disabled="isLoading"
-            rows="1"
-            class="input-field"
-          ></textarea>
-          <button
-            @click="handleSend"
-            :disabled="!userInput.trim() || isLoading"
-            class="send-btn"
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M18 2L9 11M18 2L12 18L9 11M18 2L2 8L9 11" stroke="currentColor" stroke-width="2" stroke-linejoin="bevel"/>
-            </svg>
-          </button>
+          <div class="input-container">
+            <textarea
+              ref="inputField"
+              v-model="userInput"
+              @keydown="handleKeydown"
+              @input="adjustTextareaHeight"
+              placeholder="输入您的消息... (Shift + Enter 换行)"
+              :disabled="isLoading"
+              rows="1"
+              class="input-field"
+            ></textarea>
+            <div class="input-actions">
+              <button
+                @click="handleSend"
+                :disabled="!userInput.trim() || isLoading"
+                class="send-btn"
+                title="发送 (Enter)"
+              >
+                ▶
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -201,6 +206,7 @@ const userInput = ref('')
 const isLoading = ref(false)
 const isInitializing = ref(true)  // 添加初始化状态
 const messagesContainer = ref(null)
+const inputField = ref(null)
 const styleLibrary = ref(null)
 const settings = ref(null)
 const sidebarOpen = ref(window.innerWidth > 1024)
@@ -240,6 +246,10 @@ onMounted(async () => {
 
   // 数据加载完成后再显示内容，避免跳变
   isInitializing.value = false
+
+  // Initialize textarea height
+  await nextTick()
+  adjustTextareaHeight()
 })
 
 watch(() => currentConversation.value?.messages.length, () => {
@@ -317,6 +327,26 @@ const filterConversations = () => {
   })
 }
 
+const handleKeydown = (event) => {
+  // Enter without Shift: send message
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault()
+    handleSend()
+  }
+  // Shift + Enter: allow new line (default behavior)
+}
+
+const adjustTextareaHeight = () => {
+  if (!inputField.value) return
+
+  // Reset height to auto to get the correct scrollHeight
+  inputField.value.style.height = 'auto'
+
+  // Set new height based on scrollHeight, with max-height handled by CSS
+  const newHeight = Math.min(inputField.value.scrollHeight, 200) // max 200px
+  inputField.value.style.height = `${newHeight}px`
+}
+
 const handleSend = async () => {
   if (!userInput.value.trim() || isLoading.value) return
 
@@ -351,6 +381,13 @@ const handleSend = async () => {
   filteredConversations.value = conversations.value
 
   userInput.value = ''
+
+  // Reset textarea height after sending
+  await nextTick()
+  if (inputField.value) {
+    inputField.value.style.height = 'auto'
+  }
+
   isLoading.value = true
 
   await nextTick()
@@ -1072,36 +1109,63 @@ const scrollToBottom = (force = false) => {
 .input-wrapper {
   max-width: 900px;
   margin: 0 auto;
+}
+
+.input-container {
+  position: relative;
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
   align-items: flex-end;
+  background: var(--color-bg-secondary);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-sm);
+  transition: all var(--transition-fast);
+}
+
+.input-container:focus-within {
+  border-color: var(--color-primary);
+  background: var(--color-bg-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light), 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .input-field {
   flex: 1;
-  padding: var(--spacing-md) var(--spacing-lg);
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: transparent;
+  border: none;
   color: var(--color-text-primary);
   font-size: var(--font-size-base);
-  line-height: var(--line-height-normal);
+  line-height: 1.5;
   resize: none;
   outline: none;
-  transition: all var(--transition-fast);
   font-family: var(--font-family);
-  min-height: 52px;
+  min-height: 24px;
   max-height: 200px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.input-field::-webkit-scrollbar {
+  width: 6px;
+}
+
+.input-field::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.input-field::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 3px;
+}
+
+.input-field::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-tertiary);
 }
 
 .input-field::placeholder {
   color: var(--color-text-tertiary);
-}
-
-.input-field:focus {
-  border-color: var(--color-primary);
-  background: var(--color-bg-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
 .input-field:disabled {
@@ -1109,12 +1173,19 @@ const scrollToBottom = (force = false) => {
   cursor: not-allowed;
 }
 
+.input-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-xs);
+  padding-bottom: 2px;
+}
+
 .send-btn {
-  width: 52px;
-  height: 52px;
+  width: 36px;
+  height: 36px;
   background: var(--color-primary);
   border: none;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   color: white;
   cursor: pointer;
   display: flex;
@@ -1122,22 +1193,30 @@ const scrollToBottom = (force = false) => {
   justify-content: center;
   transition: all var(--transition-fast);
   flex-shrink: 0;
-  box-shadow: var(--shadow-sm);
+  overflow: visible;
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.send-btn svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
 }
 
 .send-btn:hover:not(:disabled) {
   background: var(--color-primary-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: scale(1.05);
 }
 
 .send-btn:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: var(--shadow-sm);
+  transform: scale(0.95);
 }
 
 .send-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
@@ -1176,6 +1255,19 @@ const scrollToBottom = (force = false) => {
 
   .input-section {
     padding: 16px;
+  }
+
+  .input-container {
+    padding: var(--spacing-xs);
+  }
+
+  .input-field {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  .send-btn {
+    width: 32px;
+    height: 32px;
   }
 
   .message {
