@@ -25,7 +25,6 @@
 <style scoped>
 .navbar {
   background-color: var(--color-bg-primary);
-  border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
@@ -35,9 +34,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-md) var(--spacing-xl);
+  padding: var(--spacing-lg) var(--spacing-xl);
   max-width: 1400px;
   margin: 0 auto;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .logo h1 {
@@ -49,36 +49,43 @@
 
 .nav-links {
   display: flex;
-  gap: 0;
+  gap: var(--spacing-xl);
   align-items: center;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 4px;
-  background: var(--color-bg-secondary);
 }
 
 .nav-links a {
   position: relative;
-  padding: var(--spacing-sm) var(--spacing-xl);
+  padding: var(--spacing-sm) 0;
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text-secondary);
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
   text-decoration: none;
-  border-radius: var(--radius-sm);
-  white-space: nowrap;
 }
 
-.nav-links a:hover:not(.active) {
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -18px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-primary);
+  transform: scaleX(0);
+  transition: transform 0.2s ease;
+}
+
+.nav-links a:hover {
   color: var(--color-text-primary);
-  background: var(--color-bg-hover);
 }
 
 .nav-links a.active {
   color: var(--color-primary);
-  background: var(--color-bg-primary);
   font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.nav-links a.active::after {
+  transform: scaleX(1);
 }
 
 @media (max-width: 768px) {
@@ -87,12 +94,15 @@
   }
 
   .nav-links {
-    padding: 3px;
+    gap: var(--spacing-lg);
   }
 
   .nav-links a {
-    padding: var(--spacing-sm) var(--spacing-md);
     font-size: var(--font-size-xs);
+  }
+
+  .nav-links a::after {
+    bottom: -14px;
   }
 
   .logo h1 {
