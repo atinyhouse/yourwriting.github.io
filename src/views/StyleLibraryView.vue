@@ -1028,7 +1028,7 @@ const reanalyze = async () => {
   isAnalyzing.value = true
 
   try {
-    // 始终使用 AI 分析
+    // 尝试使用 AI 深度分析
     library.value.analysis = await analyzeStyleWithAI(library.value.sources, settings.value.deepseekApiKey)
     library.value.totalWords = library.value.analysis.totalWords
     await saveStyleLibrary(library.value)
@@ -1038,8 +1038,22 @@ const reanalyze = async () => {
 
     alert('✅ AI 深度分析完成！\n\n分析结果已保存到文风库。')
   } catch (error) {
-    console.error('AI 分析失败:', error)
-    alert(`AI 分析失败: ${error.message}`)
+    console.error('AI 分析失败，降级使用正则分析:', error)
+
+    // 降级：使用正则表达式分析
+    try {
+      library.value.analysis = analyzeWritingStyle(library.value.sources)
+      library.value.totalWords = library.value.analysis.totalWords
+      await saveStyleLibrary(library.value)
+
+      // 重新从存储加载
+      library.value = await getStyleLibrary()
+
+      alert('⚠️ AI 分析失败，已使用基础分析\n\n分析结果已保存。如需深度分析，请检查网络连接或 API 配置。')
+    } catch (fallbackError) {
+      console.error('基础分析也失败:', fallbackError)
+      alert(`分析失败: ${fallbackError.message}`)
+    }
   } finally {
     isAnalyzing.value = false
   }
