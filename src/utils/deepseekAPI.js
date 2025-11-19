@@ -1,7 +1,11 @@
 // DeepSeek API 集成（使用 Cloudflare Workers 代理）
 
-// 使用 Cloudflare Workers 代理（隐藏 API Key）
-const API_ENDPOINT = 'https://deepseek-proxy.lucca-caolu.workers.dev'
+// 根据环境选择 Worker 地址
+// 开发环境：本地 Worker
+// 生产环境：线上 Worker
+const API_ENDPOINT = import.meta.env.DEV
+  ? 'http://localhost:8787'
+  : 'https://deepseek-proxy.lucca-caolu.workers.dev'
 
 // 调用 DeepSeek API（通过代理）
 export const callDeepSeekAPI = async (messages, apiKey, params = {}) => {
