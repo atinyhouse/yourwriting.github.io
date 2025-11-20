@@ -31,7 +31,7 @@
           <div class="input-card">
             <div class="card-icon">🔗</div>
             <h3>从链接导入</h3>
-            <p>支持单篇文章或博客首页批量导入</p>
+            <p>支持：公众号单篇文章、博客单篇文章、博客批量导入</p>
             <input
               v-model="urlInput"
               type="url"
